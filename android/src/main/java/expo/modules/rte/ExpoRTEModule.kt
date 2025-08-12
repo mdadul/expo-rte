@@ -2,49 +2,67 @@ package expo.modules.rte
 
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
-import java.net.URL
 
 class ExpoRTEModule : Module() {
-  // Each module class must implement the definition function. The definition consists of components
-  // that describes the module's functionality and behavior.
-  // See https://docs.expo.dev/modules/module-api for more details about available components.
   override fun definition() = ModuleDefinition {
-    // Sets the name of the module that JavaScript code will use to refer to the module. Takes a string as an argument.
-    // Can be inferred from module's class name, but it's recommended to set it explicitly for clarity.
-    // The module will be accessible from `requireNativeModule('ExpoRTE')` in JavaScript.
     Name("ExpoRTE")
-
-    // Sets constant properties on the module. Can take a dictionary or a closure that returns a dictionary.
-    Constants(
-      "PI" to Math.PI
-    )
 
     // Defines event names that the module can send to JavaScript.
     Events("onChange")
 
-    // Defines a JavaScript synchronous function that runs the native code on the JavaScript thread.
-    Function("hello") {
-      "Hello world! 👋"
+    // Set content in the current focused RTE view
+    AsyncFunction("setContent") { content: String ->
+      getCurrentRTEView()?.setContent(content)
     }
 
-    // Defines a JavaScript function that always returns a Promise and whose native code
-    // is by default dispatched on the different thread than the JavaScript runtime runs on.
-    AsyncFunction("setValueAsync") { value: String ->
-      // Send an event to JavaScript.
-      sendEvent("onChange", mapOf(
-        "value" to value
-      ))
+    // Get content from the current focused RTE view
+    AsyncFunction("getContent") { ->
+      getCurrentRTEView()?.getContent() ?: ""
     }
 
-    // Enables the module to be used as a native view. Definition components that are accepted as part of
-    // the view definition: Prop, Events.
+    // Apply formatting to selected text
+    AsyncFunction("format") { type: String, value: Any? ->
+      getCurrentRTEView()?.format(type, value)
+    }
+
+    // Insert image into the editor
+    AsyncFunction("insertImage") { uri: String, width: Int?, height: Int? ->
+      getCurrentRTEView()?.insertImage(uri, width, height)
+    }
+
+    // Undo last action
+    AsyncFunction("undo") { ->
+      getCurrentRTEView()?.undo()
+    }
+
+    // Redo last undone action
+    AsyncFunction("redo") { ->
+      getCurrentRTEView()?.redo()
+    }
+
+    // Enables the module to be used as a native view
     View(ExpoRTEView::class) {
-      // Defines a setter for the `url` prop.
-      Prop("url") { view: ExpoRTEView, url: URL ->
-        view.webView.loadUrl(url.toString())
+      // Content prop to set initial content
+      Prop("content") { view: ExpoRTEView, content: String? ->
+        content?.let { view.setContent(it) }
       }
-      // Defines an event that the view can send to JavaScript.
-      Events("onLoad")
+
+      // Placeholder prop
+      Prop("placeholder") { view: ExpoRTEView, placeholder: String? ->
+        view.setPlaceholder(placeholder ?: "")
+      }
+
+      // Editable prop
+      Prop("editable") { view: ExpoRTEView, editable: Boolean ->
+        view.setEditable(editable)
+      }
+
+      // Content change event
+      Events("onChange")
     }
+  }
+
+  private fun getCurrentRTEView(): ExpoRTEView? {
+    return ExpoRTEView.currentFocusedView
   }
 }
