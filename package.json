@@ -1,7 +1,7 @@
 {
   "name": "expo-rte",
-  "version": "0.1.0",
-  "description": "Expo RTE is a cross-platform rich text editor for React Native and Expo applications.",
+  "version": "1.0.0",
+  "description": "Professional, responsive rich text editor for React Native and Expo with adaptive toolbar and customizable styling options.",
   "main": "build/index.js",
   "types": "build/index.d.ts",
   "scripts": {
@@ -18,8 +18,23 @@
   "keywords": [
     "react-native",
     "expo",
-    "expo-rte",
-    "ExpoRTE"
+    "rich-text-editor",
+    "text-editor",
+    "wysiwyg",
+    "editor",
+    "formatting",
+    "toolbar",
+    "responsive",
+    "typescript",
+    "cross-platform",
+    "ios",
+    "android",
+    "html-editor",
+    "adaptive",
+    "professional",
+    "customizable",
+    "mobile-editor",
+    "touch-friendly"
   ],
   "repository": "https://github.com/mdadul/expo-rte",
   "bugs": {
@@ -28,7 +43,6 @@
   "author": "Emdadul Islam <emdadulislam580@gmail.com> (https://github.com/mdadul)",
   "license": "MIT",
   "homepage": "https://github.com/mdadul/expo-rte#readme",
-  "dependencies": {},
   "devDependencies": {
     "@types/react": "~19.0.0",
     "expo-module-scripts": "^4.1.10",
