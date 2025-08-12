@@ -1,14 +1,60 @@
 import React, { useState, useRef, useEffect } from 'react';
 import * as ExpoRTE from 'expo-rte';
-import { RichTextEditor, RichTextEditorRef } from 'expo-rte';
-import { Button, SafeAreaView, ScrollView, Text, View, Alert, TouchableOpacity } from 'react-native';
+import { RichTextEditor, RichTextEditorRef, ToolbarConfig, ToolbarButton } from 'expo-rte';
+import { Button, SafeAreaView, ScrollView, Text, View, Alert, TouchableOpacity, StyleSheet, StatusBar } from 'react-native';
 import TestFormatting from './TestFormatting';
 
 export default function App() {
   const [content, setContent] = useState('<p>Welcome to the <strong>Rich Text Editor</strong>!</p><p>Try selecting text and using the formatting buttons above.</p>');
   const [lastChange, setLastChange] = useState<string>('No changes yet');
   const [showTest, setShowTest] = useState(false);
+  const [currentDemo, setCurrentDemo] = useState<'basic' | 'custom' | 'grouped'>('basic');
   const rteRef = useRef<RichTextEditorRef>(null);
+
+  // Custom toolbar configurations for demos
+  const customToolbarConfig: ToolbarConfig = {
+    scrollable: true,
+    showLabels: true,
+    buttons: [
+      { type: 'bold', icon: '𝐁', label: 'Bold', group: 'format' },
+      { type: 'italic', icon: '𝐼', label: 'Italic', group: 'format' },
+      { type: 'underline', icon: '𝐔', label: 'Under', group: 'format' },
+      { type: 'bullet', icon: '●', label: 'List', group: 'list' },
+      { type: 'link', icon: '🔗', label: 'Link', value: 'https://expo.dev', group: 'insert' },
+      { type: 'undo', icon: '↶', label: 'Undo', group: 'action' },
+      { type: 'redo', icon: '↷', label: 'Redo', group: 'action' },
+    ],
+    buttonStyle: {
+      backgroundColor: '#007AFF',
+      borderColor: '#0056CC',
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+    },
+    buttonTextStyle: {
+      color: '#FFFFFF',
+      fontSize: 14,
+      fontWeight: 'bold',
+    },
+  };
+
+  const groupedToolbarConfig: ToolbarConfig = {
+    groupButtons: true,
+    scrollable: true,
+    buttons: [
+      { type: 'bold', icon: 'B', group: 'format' },
+      { type: 'italic', icon: 'I', group: 'format' },
+      { type: 'underline', icon: 'U', group: 'format' },
+      { type: 'strikethrough', icon: 'S', group: 'format' },
+      { type: 'bullet', icon: '•', group: 'list' },
+      { type: 'numbered', icon: '1.', group: 'list' },
+      { type: 'undo', icon: '⟲', group: 'action' },
+      { type: 'redo', icon: '⟳', group: 'action' },
+    ],
+    style: {
+      backgroundColor: '#f0f8ff',
+      borderBottomColor: '#4169e1',
+    },
+  };
   
   useEffect(() => {
     const subscription = ExpoRTE.addChangeListener(({ content }) => {
@@ -48,12 +94,12 @@ export default function App() {
   if (showTest) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.switchContainer}>
+        <View style={styles.navigationContainer}>
           <TouchableOpacity 
-            style={styles.switchButton} 
+            style={styles.navButton} 
             onPress={() => setShowTest(false)}
           >
-            <Text style={styles.switchButtonText}>← Back to Main Demo</Text>
+            <Text style={styles.navButtonText}>← Back to Main Demo</Text>
           </TouchableOpacity>
         </View>
         <TestFormatting />
@@ -61,50 +107,112 @@ export default function App() {
     );
   }
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.container}>
-        <Text style={styles.header}>Expo Rich Text Editor</Text>
-        
-        <View style={styles.switchContainer}>
-          <TouchableOpacity 
-            style={styles.switchButton} 
-            onPress={() => setShowTest(true)}
-          >
-            <Text style={styles.switchButtonText}>Go to Formatting Test →</Text>
-          </TouchableOpacity>
-        </View>
-        
-        <Group name="Rich Text Editor">
-          <RichTextEditor
-            ref={rteRef}
-            content={content}
-            placeholder="Start typing your rich text here..."
-            onChange={({ nativeEvent }) => {
-              console.log('Content changed:', nativeEvent.content);
-            }}
-            style={styles.editor}
-            showToolbar={true}
-          />
-        </Group>
+  const renderDemoSelector = () => (
+    <View style={styles.demoSelector}>
+      <Text style={styles.demoSelectorTitle}>Toolbar Demos</Text>
+      <View style={styles.demoButtons}>
+        <TouchableOpacity
+          style={[styles.demoButton, currentDemo === 'basic' && styles.demoButtonActive]}
+          onPress={() => setCurrentDemo('basic')}
+        >
+          <Text style={[styles.demoButtonText, currentDemo === 'basic' && styles.demoButtonTextActive]}>
+            Basic
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.demoButton, currentDemo === 'custom' && styles.demoButtonActive]}
+          onPress={() => setCurrentDemo('custom')}
+        >
+          <Text style={[styles.demoButtonText, currentDemo === 'custom' && styles.demoButtonTextActive]}>
+            Custom
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.demoButton, currentDemo === 'grouped' && styles.demoButtonActive]}
+          onPress={() => setCurrentDemo('grouped')}
+        >
+          <Text style={[styles.demoButtonText, currentDemo === 'grouped' && styles.demoButtonTextActive]}>
+            Grouped
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
 
-        <Group name="Actions">
-          <View style={styles.buttonRow}>
-            <Button title="Set Sample Content" onPress={handleSetContent} />
-            <Button title="Get Content" onPress={handleGetContent} />
+  const getToolbarConfig = () => {
+    switch (currentDemo) {
+      case 'custom':
+        return customToolbarConfig;
+      case 'grouped':
+        return groupedToolbarConfig;
+      default:
+        return undefined;
+    }
+  };
+
+  return (
+    <>
+      <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
+      <SafeAreaView style={styles.container}>
+        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+          <Text style={styles.header}>📝 Rich Text Editor</Text>
+          <Text style={styles.subtitle}>Expo module with customizable toolbar</Text>
+          
+          <View style={styles.navigationContainer}>
+            <TouchableOpacity 
+              style={styles.navButton} 
+              onPress={() => setShowTest(true)}
+            >
+              <Text style={styles.navButtonText}>🧪 Advanced Testing</Text>
+            </TouchableOpacity>
           </View>
-          <View style={styles.buttonRow}>
-            <Button title="Add Link" onPress={handleAddLink} />
-            <Button title="Test Direct Format" onPress={testDirectFormat} />
-          </View>
-        </Group>
-        
-        <Group name="Events">
-          <Text>Last content change:</Text>
-          <Text style={styles.eventText}>{lastChange}</Text>
-        </Group>
-      </ScrollView>
-    </SafeAreaView>
+
+          {renderDemoSelector()}
+          
+          <Group name={`${currentDemo.charAt(0).toUpperCase() + currentDemo.slice(1)} Toolbar Demo`}>
+            <RichTextEditor
+              ref={rteRef}
+              content={content}
+              placeholder="Start typing your rich text here... Select text and use the toolbar buttons above to format it."
+              onChange={({ nativeEvent }) => {
+                console.log('Content changed:', nativeEvent.content);
+              }}
+              style={styles.editor}
+              showToolbar={true}
+              toolbarConfig={getToolbarConfig()}
+            />
+          </Group>
+
+          <Group name="Quick Actions">
+            <View style={styles.actionGrid}>
+              <TouchableOpacity style={styles.actionButton} onPress={handleSetContent}>
+                <Text style={styles.actionButtonIcon}>📄</Text>
+                <Text style={styles.actionButtonText}>Set Sample</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.actionButton} onPress={handleGetContent}>
+                <Text style={styles.actionButtonIcon}>📋</Text>
+                <Text style={styles.actionButtonText}>Get Content</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.actionButton} onPress={handleAddLink}>
+                <Text style={styles.actionButtonIcon}>🔗</Text>
+                <Text style={styles.actionButtonText}>Add Link</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.actionButton} onPress={testDirectFormat}>
+                <Text style={styles.actionButtonIcon}>⚡</Text>
+                <Text style={styles.actionButtonText}>Test API</Text>
+              </TouchableOpacity>
+            </View>
+          </Group>
+          
+          <Group name="Live Content">
+            <Text style={styles.contentLabel}>HTML Output:</Text>
+            <ScrollView style={styles.contentPreview} horizontal>
+              <Text style={styles.contentText}>{lastChange}</Text>
+            </ScrollView>
+          </Group>
+        </ScrollView>
+      </SafeAreaView>
+    </>
   );
 }
 
@@ -117,24 +225,103 @@ function Group(props: { name: string; children: React.ReactNode }) {
   );
 }
 
-const styles = {
-  header: {
-    fontSize: 30,
-    margin: 20,
-    textAlign: 'center' as const,
-    fontWeight: 'bold' as const,
-    color: '#333',
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
   },
-  groupHeader: {
-    fontSize: 20,
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 20,
+  },
+  header: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    color: '#212529',
+    marginTop: 20,
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 16,
+    textAlign: 'center',
+    color: '#6c757d',
     marginBottom: 20,
-    fontWeight: 'bold' as const,
-    color: '#444',
+    fontStyle: 'italic',
+  },
+  navigationContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  navButton: {
+    backgroundColor: '#28a745',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 25,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  navButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  demoSelector: {
+    marginHorizontal: 20,
+    marginBottom: 20,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  demoSelectorTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#495057',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  demoButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  demoButton: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    marginHorizontal: 4,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#dee2e6',
+    alignItems: 'center',
+  },
+  demoButtonActive: {
+    backgroundColor: '#007AFF',
+    borderColor: '#0056CC',
+  },
+  demoButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#495057',
+  },
+  demoButtonTextActive: {
+    color: '#fff',
   },
   group: {
-    margin: 20,
+    marginHorizontal: 20,
+    marginBottom: 20,
     backgroundColor: '#fff',
-    borderRadius: 10,
+    borderRadius: 12,
     padding: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -142,40 +329,62 @@ const styles = {
     shadowRadius: 4,
     elevation: 3,
   },
-  container: {
-    flex: 1,
-    backgroundColor: '#f0f0f0',
-  },
-  switchContainer: {
-    padding: 10,
-    alignItems: 'center',
-  },
-  switchButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 6,
-  },
-  switchButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
+  groupHeader: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#495057',
+    marginBottom: 16,
   },
   editor: {
-    height: 300,
+    height: 320,
+  },
+  actionGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  actionButton: {
+    width: '48%',
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#dee2e6',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  actionButtonIcon: {
+    fontSize: 24,
+    marginBottom: 8,
+  },
+  actionButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#495057',
+  },
+  contentLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#495057',
+    marginBottom: 8,
+  },
+  contentPreview: {
+    backgroundColor: '#f8f9fa',
     borderRadius: 8,
+    padding: 12,
+    maxHeight: 120,
+    borderWidth: 1,
+    borderColor: '#dee2e6',
   },
-  buttonRow: {
-    flexDirection: 'row' as const,
-    justifyContent: 'space-around' as const,
-    marginBottom: 10,
-  },
-  eventText: {
+  contentText: {
     fontSize: 12,
-    color: '#666',
-    backgroundColor: '#f8f8f8',
-    padding: 10,
-    borderRadius: 4,
-    marginTop: 8,
+    color: '#6c757d',
     fontFamily: 'monospace',
+    lineHeight: 18,
   },
-};
+});

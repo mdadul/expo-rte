@@ -1,6 +1,6 @@
 import type { StyleProp, ViewStyle } from 'react-native';
 
-export type FormatType = 'bold' | 'italic' | 'underline' | 'strikethrough' | 'bullet' | 'numbered' | 'link';
+export type FormatType = 'bold' | 'italic' | 'underline' | 'strikethrough' | 'bullet' | 'numbered' | 'link' | 'undo' | 'redo';
 
 export type ChangeEventPayload = {
   content: string;

@@ -20,9 +20,16 @@ public class ExpoRTEModule: Module {
       return ExpoRTEView.currentFocusedView?.getContent() ?? ""
     }
 
-    // Apply formatting to selected text
+    // Apply formatting to selected text with value
     AsyncFunction("format") { (type: String, value: String?) in
+      print("iOS format() called with type=\(type), value=\(value ?? "nil")")
       ExpoRTEView.currentFocusedView?.format(type: type, value: value)
+    }
+    
+    // Apply formatting to selected text without value (overload)
+    AsyncFunction("formatSimple") { (type: String) in
+      print("iOS formatSimple() called with type=\(type)")
+      ExpoRTEView.currentFocusedView?.format(type: type, value: nil)
     }
 
     // Image functionality removed for stability

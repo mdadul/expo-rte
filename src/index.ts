@@ -7,6 +7,7 @@ import { ChangeEventPayload, FormatType } from './ExpoRTE.types';
 export { default as ExpoRTEView } from './ExpoRTEView';
 export { default as ExpoRTE } from './ExpoRTEView';
 export { default as RichTextEditor } from './RichTextEditor';
+export type { RichTextEditorRef, ToolbarButton, ToolbarConfig } from './RichTextEditor';
 export * from  './ExpoRTE.types';
 
 // Event listener function following Expo pattern
