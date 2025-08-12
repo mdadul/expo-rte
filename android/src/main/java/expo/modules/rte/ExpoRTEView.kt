@@ -6,6 +6,7 @@ import android.text.*
 import android.text.method.LinkMovementMethod
 import android.text.style.*
 import android.widget.EditText
+import android.widget.TextView
 import expo.modules.kotlin.AppContext
 import expo.modules.kotlin.viewevent.EventDispatcher
 import expo.modules.kotlin.views.ExpoView
@@ -56,7 +57,7 @@ class ExpoRTEView(context: Context, appContext: AppContext) : ExpoView(context, 
     } else {
       SpannableString(content)
     }
-    editText.text = spanned
+    editText.setText(spanned, TextView.BufferType.SPANNABLE)
   }
 
   fun getContent(): String {
