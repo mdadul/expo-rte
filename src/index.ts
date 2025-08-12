@@ -32,8 +32,6 @@ export function format(type: FormatType, value?: any): Promise<void> {
   }
 }
 
-// Image functionality removed for stability
-
 export function undo(): Promise<void> {
   return ExpoRTEModule.undo();
 }

@@ -1,5 +1,5 @@
 import React, { useImperativeHandle, forwardRef, ReactNode, useState, useEffect } from 'react';
-import { View, TouchableOpacity, Text, StyleSheet, ScrollView, ViewStyle, TextStyle, Dimensions, Platform } from 'react-native';
+import { View, TouchableOpacity, Text, StyleSheet, ScrollView, ViewStyle, TextStyle, Dimensions } from 'react-native';
 import ExpoRTEView from './ExpoRTEView';
 import ExpoRTEModule from './ExpoRTEModule';
 import { ExpoRTEViewProps, FormatType } from './ExpoRTE.types';
@@ -24,7 +24,11 @@ export interface ToolbarConfig {
   buttons?: ToolbarButton[];
   style?: ViewStyle;
   buttonStyle?: ViewStyle;
+  buttonActiveStyle?: ViewStyle;
   buttonTextStyle?: TextStyle;
+  buttonActiveTextStyle?: TextStyle;
+  buttonLabelStyle?: TextStyle;
+  groupStyle?: ViewStyle;
   scrollable?: boolean;
   showLabels?: boolean;
   groupButtons?: boolean;
@@ -48,8 +52,8 @@ const defaultToolbarButtons: ToolbarButton[] = [
   { type: 'strikethrough', icon: 'S', label: 'Strike', group: 'format' },
   { type: 'bullet', icon: '•', label: 'Bullet', group: 'list' },
   { type: 'numbered', icon: '1.', label: 'Number', group: 'list' },
-  { type: 'undo', icon: '⟲', label: 'Undo', group: 'action' },
-  { type: 'redo', icon: '⟳', label: 'Redo', group: 'action' },
+  { type: 'undo', icon: '↶', label: 'Undo', group: 'action' },
+  { type: 'redo', icon: '↷', label: 'Redo', group: 'action' },
 ];
 
 const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
@@ -134,13 +138,9 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
           minWidth: densityStyles.buttonMinWidth,
           marginRight: densityStyles.spacing,
         },
-        isActive && styles.toolbarButtonActive,
         toolbarConfig?.buttonStyle,
-        isActive && toolbarConfig?.buttonStyle && {
-          backgroundColor: '#007AFF',
-          borderColor: '#0056CC',
-        },
-      ];
+        isActive && [styles.toolbarButtonActive, toolbarConfig?.buttonActiveStyle],
+      ].filter(Boolean);
 
       const textStyles = [
         styles.toolbarButtonText,
@@ -152,9 +152,8 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
         button.type === 'underline' && { textDecorationLine: 'underline' as const },
         button.type === 'strikethrough' && { textDecorationLine: 'line-through' as const },
         button.type === 'bold' && { fontWeight: 'bold' as const },
-        isActive && styles.toolbarButtonTextActive,
         toolbarConfig?.buttonTextStyle,
-        isActive && { color: '#FFFFFF' },
+        isActive && [styles.toolbarButtonTextActive, toolbarConfig?.buttonActiveTextStyle],
       ].filter(Boolean);
 
       const showLabel = toolbarConfig?.showLabels && button.label && !isSmallScreen;
@@ -165,9 +164,12 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
           style={buttonStyles}
           onPress={() => {
             handleFormat(button.type, button.value);
+            
             // Toggle active state for visual feedback
             const newActiveFormats = new Set(activeFormats);
-            if (isActive) {
+            if (['undo', 'redo'].includes(button.type)) {
+              // Don't toggle active state for action buttons
+            } else if (isActive) {
               newActiveFormats.delete(button.type);
             } else {
               newActiveFormats.add(button.type);
@@ -185,7 +187,11 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
             button.icon
           )}
           {showLabel && (
-            <Text style={[styles.toolbarButtonLabel, { fontSize: densityStyles.fontSize - 4 }]}>
+            <Text style={[
+              styles.toolbarButtonLabel, 
+              { fontSize: densityStyles.fontSize - 4 },
+              toolbarConfig?.buttonLabelStyle
+            ]}>
               {button.label}
             </Text>
           )}
@@ -197,7 +203,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
       if (buttons.length === 0) return null;
       
       return (
-        <View key={groupName} style={styles.toolbarGroup}>
+        <View key={groupName} style={[styles.toolbarGroup, toolbarConfig?.groupStyle]}>
           {buttons.map(renderButton)}
         </View>
       );
@@ -236,25 +242,13 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
         styles.toolbarContainer,
         isTablet && styles.toolbarContainerTablet,
         isSmallScreen && styles.toolbarContainerSmall,
-        toolbarConfig?.style && {
-          backgroundColor: toolbarConfig.style.backgroundColor,
-          borderBottomWidth: toolbarConfig.style.borderBottomWidth,
-          borderBottomColor: toolbarConfig.style.borderBottomColor,
-          borderTopLeftRadius: toolbarConfig.style.borderTopLeftRadius,
-          borderTopRightRadius: toolbarConfig.style.borderTopRightRadius,
-        }
+        toolbarConfig?.style,
       ];
       
       const contentStyle = [
         styles.toolbarContent,
         isTablet && styles.toolbarContentTablet,
         isSmallScreen && styles.toolbarContentSmall,
-        toolbarConfig?.style && {
-          flexDirection: toolbarConfig.style.flexDirection,
-          alignItems: toolbarConfig.style.alignItems,
-          paddingHorizontal: toolbarConfig.style.paddingHorizontal,
-          paddingVertical: toolbarConfig.style.paddingVertical,
-        }
       ];
 
       const shouldScroll = toolbarConfig?.scrollable || 
@@ -278,9 +272,6 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
               horizontal 
               contentContainerStyle={contentStyle}
               showsHorizontalScrollIndicator={false}
-              decelerationRate="fast"
-              snapToInterval={isSmallScreen ? 40 : 50}
-              snapToAlignment="start"
             >
               {content}
             </ScrollView>
@@ -300,9 +291,6 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
             horizontal 
             contentContainerStyle={contentStyle}
             showsHorizontalScrollIndicator={false}
-            decelerationRate="fast"
-            snapToInterval={isSmallScreen ? 40 : 50}
-            snapToAlignment="start"
           >
             {content}
           </ScrollView>
@@ -329,38 +317,14 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    borderRadius: 16,
     backgroundColor: '#ffffff',
-    overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.12,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 8,
-      },
-    }),
   },
   
-  // Toolbar Container Styles
+  // Basic Toolbar Container Styles
   toolbarContainer: {
     backgroundColor: '#ffffff',
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#e1e5e9',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.06,
-        shadowRadius: 2,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
   },
   toolbarContainerTablet: {
     paddingHorizontal: 8,
@@ -369,7 +333,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   
-  // Toolbar Content Styles
+  // Basic Toolbar Content Styles
   toolbarContent: {
     flexDirection: 'row',
     paddingHorizontal: 16,
@@ -388,7 +352,7 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   
-  // Toolbar Group Styles
+  // Basic Toolbar Group Styles
   toolbarGroup: {
     flexDirection: 'row',
     marginRight: 12,
@@ -397,49 +361,25 @@ const styles = StyleSheet.create({
     borderRightColor: '#e1e5e9',
   },
   
-  // Button Styles
+  // Basic Button Styles
   toolbarButton: {
     backgroundColor: '#f8f9fa',
-    borderRadius: 10,
+    borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: '#e1e5e9',
     alignItems: 'center',
     justifyContent: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.04,
-        shadowRadius: 2,
-      },
-      android: {
-        elevation: 1,
-      },
-    }),
   },
   toolbarButtonActive: {
     backgroundColor: '#007AFF',
     borderColor: '#0056CC',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#007AFF',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
   },
   
-  // Button Text Styles
+  // Basic Button Text Styles
   toolbarButtonText: {
     fontWeight: '600',
     color: '#374151',
     textAlign: 'center',
-    includeFontPadding: false,
-    textAlignVertical: 'center',
   },
   toolbarButtonTextActive: {
     color: '#ffffff',
@@ -452,7 +392,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   
-  // Editor Styles
+  // Basic Editor Styles
   editor: {
     flex: 1,
     minHeight: 200,

@@ -16,9 +16,6 @@
 ---
 
 ## ✨ Features
-
-- 🎨 **Professional UI/UX** - Inspired by Samsung Notes, WordPress Block Editor, and Gutenberg
-- 📱 **Fully Responsive** - Adapts to any screen size (phones, tablets, desktops)
 - 🛠️ **Highly Customizable** - Adaptive toolbar with multiple density options
 - ⚡ **Performance Optimized** - Smooth animations and efficient rendering
 - 🌍 **Cross-Platform** - Works seamlessly on iOS and Android
@@ -245,53 +242,6 @@ const customConfig: ToolbarConfig = {
 };
 ```
 
-## 📖 Examples
-
-### 🎮 Interactive Examples Gallery
-
-The example app includes a comprehensive gallery of **20+ real-world usage patterns** with live code examples:
-
-**Run the interactive examples:**
-
-```bash
-cd example
-npm install
-npm start
-```
-
-Then tap **"📚 View Examples Gallery"** to explore:
-
-#### 🔧 Basic Usage Examples
-- **Simple Editor** - Basic rich text editor with default settings
-- **Editor with Content** - Pre-populated editor with HTML content  
-- **Content Tracking** - Live tracking of content changes with statistics
-
-#### 🎨 Custom Toolbar Examples
-- **Minimal Toolbar** - Simplified toolbar with essential buttons only
-- **Professional Toolbar** - Comprehensive toolbar with grouped buttons
-- **Custom Toolbar** - Completely custom toolbar implementation
-
-#### 📱 Responsive Design Examples
-- **Adaptive Toolbar** - Toolbar that adapts to screen size automatically
-- **Device-Specific** - Different configurations for different device types
-- **Orientation-Aware** - Toolbar that adapts to device orientation
-
-#### 💾 Content Management Examples
-- **Save & Load** - Persist content to device storage
-- **Content Templates** - Pre-built templates for common document types
-- **Export Content** - Export content in different formats
-
-#### 🔗 Integration Examples
-- **Form Integration** - Rich text editor integrated with form controls
-- **Modal Editor** - Full-screen modal editor for focused writing
-- **Collaboration** - Simulated real-time collaboration features
-
-#### 🎨 Styling Examples
-- **Dark Theme** - Professional dark theme with custom colors
-- **Brand Colors** - Custom brand colors with modern styling
-- **Minimalist** - Clean, distraction-free interface
-- **Colorful** - Vibrant, playful design with individual button colors
-
 ### 📚 Documentation Examples
 
 For comprehensive examples and real-world usage patterns, see our [Examples Documentation](docs/EXAMPLES.md):
@@ -452,21 +402,6 @@ const customStyle = {
 />
 ```
 
-## 🔄 Migration Guide
-
-### From v0.1.x to v1.0.x
-
-```tsx
-// Old API (v0.1.x)
-<RichTextEditor showToolbar={true} />
-
-// New API (v1.0.x)
-<RichTextEditor 
-  showToolbar={true}
-  toolbarConfig={{ adaptive: true }}
-/>
-```
-
 ## 🤝 Contributing
 
 We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
@@ -507,18 +442,6 @@ MIT License - see the [LICENSE](LICENSE) file for details.
 
 Created by [Emdadul Islam](https://github.com/mdadul)
 
-Inspired by:
-- Samsung Notes
-- WordPress Block Editor
-- Gutenberg Editor
-
-## 🙏 Acknowledgments
-
-- Expo team for the excellent development platform
-- React Native community for continuous innovation
-- All contributors and users of this library
-
----
 
 <div align="center">
 
