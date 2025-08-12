@@ -67,7 +67,6 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
     }, []);
 
     const isTablet = screenData.width >= 768;
-    const isLandscape = screenData.width > screenData.height;
     const isSmallScreen = screenData.width < 400;
 
     useImperativeHandle(ref, () => ({
@@ -204,16 +203,39 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
       );
     };
 
+    const getAdaptiveButtons = (buttons: ToolbarButton[]) => {
+      if (!toolbarConfig?.adaptive) return buttons;
+      
+      const maxButtons = toolbarConfig.maxButtons || (isSmallScreen ? 6 : isTablet ? 12 : 8);
+      
+      if (buttons.length <= maxButtons) return buttons;
+      
+      // Prioritize essential buttons for small screens
+      const essentialButtons = buttons.filter(btn => 
+        ['bold', 'italic', 'underline', 'undo', 'redo'].includes(btn.type)
+      );
+      
+      const remainingSlots = maxButtons - essentialButtons.length;
+      const otherButtons = buttons.filter(btn => 
+        !['bold', 'italic', 'underline', 'undo', 'redo'].includes(btn.type)
+      ).slice(0, remainingSlots);
+      
+      return [...essentialButtons, ...otherButtons];
+    };
+
     const renderToolbar = () => {
       if (customToolbar) {
         return customToolbar;
       }
 
-      const buttons = toolbarConfig?.buttons || defaultToolbarButtons;
+      let buttons = toolbarConfig?.buttons || defaultToolbarButtons;
+      buttons = getAdaptiveButtons(buttons);
       
-      // Separate container styles from content styles for ScrollView compatibility
+      // Responsive container styles
       const containerStyle = [
         styles.toolbarContainer,
+        isTablet && styles.toolbarContainerTablet,
+        isSmallScreen && styles.toolbarContainerSmall,
         toolbarConfig?.style && {
           backgroundColor: toolbarConfig.style.backgroundColor,
           borderBottomWidth: toolbarConfig.style.borderBottomWidth,
@@ -225,6 +247,8 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
       
       const contentStyle = [
         styles.toolbarContent,
+        isTablet && styles.toolbarContentTablet,
+        isSmallScreen && styles.toolbarContentSmall,
         toolbarConfig?.style && {
           flexDirection: toolbarConfig.style.flexDirection,
           alignItems: toolbarConfig.style.alignItems,
@@ -232,6 +256,9 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
           paddingVertical: toolbarConfig.style.paddingVertical,
         }
       ];
+
+      const shouldScroll = toolbarConfig?.scrollable || 
+        (toolbarConfig?.adaptive && buttons.length > (isSmallScreen ? 4 : isTablet ? 10 : 6));
 
       if (toolbarConfig?.groupButtons) {
         const groupedButtons = buttons.reduce((groups, button, index) => {
@@ -245,12 +272,15 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
           renderToolbarGroup(groupButtons, groupName)
         );
 
-        return toolbarConfig?.scrollable ? (
+        return shouldScroll ? (
           <View style={containerStyle}>
             <ScrollView 
               horizontal 
               contentContainerStyle={contentStyle}
               showsHorizontalScrollIndicator={false}
+              decelerationRate="fast"
+              snapToInterval={isSmallScreen ? 40 : 50}
+              snapToAlignment="start"
             >
               {content}
             </ScrollView>
@@ -264,12 +294,15 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
 
       const content = buttons.map(renderButton);
 
-      return toolbarConfig?.scrollable ? (
+      return shouldScroll ? (
         <View style={containerStyle}>
           <ScrollView 
             horizontal 
             contentContainerStyle={contentStyle}
             showsHorizontalScrollIndicator={false}
+            decelerationRate="fast"
+            snapToInterval={isSmallScreen ? 40 : 50}
+            snapToAlignment="start"
           >
             {content}
           </ScrollView>
@@ -296,69 +329,134 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 12,
-    backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    borderRadius: 16,
+    backgroundColor: '#ffffff',
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.12,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
   },
+  
+  // Toolbar Container Styles
   toolbarContainer: {
-    backgroundColor: '#f8f9fa',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e9ecef',
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
+    backgroundColor: '#ffffff',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#e1e5e9',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.06,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
+  toolbarContainerTablet: {
+    paddingHorizontal: 8,
+  },
+  toolbarContainerSmall: {
+    paddingHorizontal: 4,
+  },
+  
+  // Toolbar Content Styles
   toolbarContent: {
     flexDirection: 'row',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     alignItems: 'center',
-    paddingRight: 12,
+    minHeight: 56,
   },
+  toolbarContentTablet: {
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    minHeight: 64,
+  },
+  toolbarContentSmall: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    minHeight: 48,
+  },
+  
+  // Toolbar Group Styles
   toolbarGroup: {
     flexDirection: 'row',
-    marginRight: 8,
-    paddingRight: 8,
-    borderRightWidth: 1,
-    borderRightColor: '#dee2e6',
+    marginRight: 12,
+    paddingRight: 12,
+    borderRightWidth: StyleSheet.hairlineWidth,
+    borderRightColor: '#e1e5e9',
   },
+  
+  // Button Styles
   toolbarButton: {
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    marginRight: 6,
-    backgroundColor: '#ffffff',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#dee2e6',
-    minWidth: 36,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#e1e5e9',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.04,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 1,
+      },
+    }),
   },
+  toolbarButtonActive: {
+    backgroundColor: '#007AFF',
+    borderColor: '#0056CC',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#007AFF',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+  
+  // Button Text Styles
   toolbarButtonText: {
-    fontSize: 16,
     fontWeight: '600',
-    color: '#495057',
+    color: '#374151',
     textAlign: 'center',
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+  },
+  toolbarButtonTextActive: {
+    color: '#ffffff',
   },
   toolbarButtonLabel: {
     fontSize: 10,
-    color: '#6c757d',
+    color: '#6b7280',
     marginTop: 2,
     textAlign: 'center',
+    fontWeight: '500',
   },
+  
+  // Editor Styles
   editor: {
     flex: 1,
     minHeight: 200,
+    backgroundColor: '#ffffff',
   },
 });
 

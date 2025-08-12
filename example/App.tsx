@@ -1,59 +1,65 @@
 import React, { useState, useRef, useEffect } from 'react';
 import * as ExpoRTE from 'expo-rte';
 import { RichTextEditor, RichTextEditorRef, ToolbarConfig, ToolbarButton } from 'expo-rte';
-import { Button, SafeAreaView, ScrollView, Text, View, Alert, TouchableOpacity, StyleSheet, StatusBar } from 'react-native';
+import { Button, SafeAreaView, ScrollView, Text, View, Alert, TouchableOpacity, StyleSheet, StatusBar, Platform } from 'react-native';
 import TestFormatting from './TestFormatting';
 
 export default function App() {
   const [content, setContent] = useState('<p>Welcome to the <strong>Rich Text Editor</strong>!</p><p>Try selecting text and using the formatting buttons above.</p>');
   const [lastChange, setLastChange] = useState<string>('No changes yet');
   const [showTest, setShowTest] = useState(false);
-  const [currentDemo, setCurrentDemo] = useState<'basic' | 'custom' | 'grouped'>('basic');
+  const [currentDemo, setCurrentDemo] = useState<'basic' | 'wordpress' | 'samsung' | 'gutenberg'>('basic');
   const rteRef = useRef<RichTextEditorRef>(null);
 
-  // Custom toolbar configurations for demos
-  const customToolbarConfig: ToolbarConfig = {
-    scrollable: true,
-    showLabels: true,
+  // Professional toolbar configurations inspired by modern editors
+  const wordPressToolbarConfig: ToolbarConfig = {
+    adaptive: true,
+    groupButtons: true,
+    density: 'comfortable',
+    showLabels: false,
     buttons: [
       { type: 'bold', icon: '𝐁', label: 'Bold', group: 'format' },
       { type: 'italic', icon: '𝐼', label: 'Italic', group: 'format' },
-      { type: 'underline', icon: '𝐔', label: 'Under', group: 'format' },
-      { type: 'bullet', icon: '●', label: 'List', group: 'list' },
+      { type: 'underline', icon: 'U', label: 'Underline', group: 'format' },
+      { type: 'strikethrough', icon: 'S̶', label: 'Strike', group: 'format' },
+      { type: 'bullet', icon: '⁃', label: 'Bullet List', group: 'list' },
+      { type: 'numbered', icon: '№', label: 'Numbered List', group: 'list' },
       { type: 'link', icon: '🔗', label: 'Link', value: 'https://expo.dev', group: 'insert' },
       { type: 'undo', icon: '↶', label: 'Undo', group: 'action' },
       { type: 'redo', icon: '↷', label: 'Redo', group: 'action' },
     ],
-    buttonStyle: {
-      backgroundColor: '#007AFF',
-      borderColor: '#0056CC',
-      paddingHorizontal: 12,
-      paddingVertical: 10,
-    },
-    buttonTextStyle: {
-      color: '#FFFFFF',
-      fontSize: 14,
-      fontWeight: 'bold',
-    },
   };
 
-  const groupedToolbarConfig: ToolbarConfig = {
-    groupButtons: true,
+  const samsungNotesConfig: ToolbarConfig = {
+    adaptive: true,
+    density: 'compact',
     scrollable: true,
+    maxButtons: 8,
     buttons: [
-      { type: 'bold', icon: 'B', group: 'format' },
-      { type: 'italic', icon: 'I', group: 'format' },
-      { type: 'underline', icon: 'U', group: 'format' },
-      { type: 'strikethrough', icon: 'S', group: 'format' },
-      { type: 'bullet', icon: '•', group: 'list' },
-      { type: 'numbered', icon: '1.', group: 'list' },
-      { type: 'undo', icon: '⟲', group: 'action' },
-      { type: 'redo', icon: '⟳', group: 'action' },
+      { type: 'bold', icon: 'B', label: 'Bold', group: 'format' },
+      { type: 'italic', icon: 'I', label: 'Italic', group: 'format' },
+      { type: 'underline', icon: 'U̲', label: 'Underline', group: 'format' },
+      { type: 'bullet', icon: '•', label: 'Bullets', group: 'list' },
+      { type: 'numbered', icon: '1.', label: 'Numbers', group: 'list' },
+      { type: 'undo', icon: '⟲', label: 'Undo', group: 'action' },
+      { type: 'redo', icon: '⟳', label: 'Redo', group: 'action' },
     ],
-    style: {
-      backgroundColor: '#f0f8ff',
-      borderBottomColor: '#4169e1',
-    },
+  };
+
+  const gutenbergConfig: ToolbarConfig = {
+    adaptive: true,
+    groupButtons: true,
+    density: 'comfortable',
+    showLabels: false,
+    buttons: [
+      { type: 'bold', icon: '𝐁', label: 'Bold', group: 'format' },
+      { type: 'italic', icon: '𝐼', label: 'Italic', group: 'format' },
+      { type: 'link', icon: '🔗', label: 'Link', value: 'https://wordpress.org', group: 'insert' },
+      { type: 'bullet', icon: '◦', label: 'Bullet List', group: 'list' },
+      { type: 'numbered', icon: '①', label: 'Numbered List', group: 'list' },
+      { type: 'undo', icon: '↶', label: 'Undo', group: 'action' },
+      { type: 'redo', icon: '↷', label: 'Redo', group: 'action' },
+    ],
   };
   
   useEffect(() => {
@@ -94,12 +100,12 @@ export default function App() {
   if (showTest) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.navigationContainer}>
+        <View style={styles.headerSection}>
           <TouchableOpacity 
-            style={styles.navButton} 
+            style={styles.devButton} 
             onPress={() => setShowTest(false)}
           >
-            <Text style={styles.navButtonText}>← Back to Main Demo</Text>
+            <Text style={styles.devButtonText}>← Back to Main Demo</Text>
           </TouchableOpacity>
         </View>
         <TestFormatting />
@@ -109,42 +115,66 @@ export default function App() {
 
   const renderDemoSelector = () => (
     <View style={styles.demoSelector}>
-      <Text style={styles.demoSelectorTitle}>Toolbar Demos</Text>
-      <View style={styles.demoButtons}>
-        <TouchableOpacity
-          style={[styles.demoButton, currentDemo === 'basic' && styles.demoButtonActive]}
-          onPress={() => setCurrentDemo('basic')}
-        >
-          <Text style={[styles.demoButtonText, currentDemo === 'basic' && styles.demoButtonTextActive]}>
-            Basic
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.demoButton, currentDemo === 'custom' && styles.demoButtonActive]}
-          onPress={() => setCurrentDemo('custom')}
-        >
-          <Text style={[styles.demoButtonText, currentDemo === 'custom' && styles.demoButtonTextActive]}>
-            Custom
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.demoButton, currentDemo === 'grouped' && styles.demoButtonActive]}
-          onPress={() => setCurrentDemo('grouped')}
-        >
-          <Text style={[styles.demoButtonText, currentDemo === 'grouped' && styles.demoButtonTextActive]}>
-            Grouped
-          </Text>
-        </TouchableOpacity>
-      </View>
+      <Text style={styles.demoSelectorTitle}>🎨 Editor Styles</Text>
+      <Text style={styles.demoSelectorSubtitle}>Choose an editor style inspired by popular apps</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.demoScrollView}>
+        <View style={styles.demoButtons}>
+          <TouchableOpacity
+            style={[styles.demoCard, currentDemo === 'basic' && styles.demoCardActive]}
+            onPress={() => setCurrentDemo('basic')}
+          >
+            <Text style={styles.demoCardIcon}>📝</Text>
+            <Text style={[styles.demoCardTitle, currentDemo === 'basic' && styles.demoCardTitleActive]}>
+              Basic
+            </Text>
+            <Text style={styles.demoCardDesc}>Simple & Clean</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[styles.demoCard, currentDemo === 'wordpress' && styles.demoCardActive]}
+            onPress={() => setCurrentDemo('wordpress')}
+          >
+            <Text style={styles.demoCardIcon}>🌐</Text>
+            <Text style={[styles.demoCardTitle, currentDemo === 'wordpress' && styles.demoCardTitleActive]}>
+              WordPress
+            </Text>
+            <Text style={styles.demoCardDesc}>Block Editor Style</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[styles.demoCard, currentDemo === 'samsung' && styles.demoCardActive]}
+            onPress={() => setCurrentDemo('samsung')}
+          >
+            <Text style={styles.demoCardIcon}>📱</Text>
+            <Text style={[styles.demoCardTitle, currentDemo === 'samsung' && styles.demoCardTitleActive]}>
+              Samsung
+            </Text>
+            <Text style={styles.demoCardDesc}>Notes App Style</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[styles.demoCard, currentDemo === 'gutenberg' && styles.demoCardActive]}
+            onPress={() => setCurrentDemo('gutenberg')}
+          >
+            <Text style={styles.demoCardIcon}>✍️</Text>
+            <Text style={[styles.demoCardTitle, currentDemo === 'gutenberg' && styles.demoCardTitleActive]}>
+              Gutenberg
+            </Text>
+            <Text style={styles.demoCardDesc}>WordPress Editor</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
     </View>
   );
 
   const getToolbarConfig = () => {
     switch (currentDemo) {
-      case 'custom':
-        return customToolbarConfig;
-      case 'grouped':
-        return groupedToolbarConfig;
+      case 'wordpress':
+        return wordPressToolbarConfig;
+      case 'samsung':
+        return samsungNotesConfig;
+      case 'gutenberg':
+        return gutenbergConfig;
       default:
         return undefined;
     }
@@ -155,25 +185,40 @@ export default function App() {
       <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
       <SafeAreaView style={styles.container}>
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-          <Text style={styles.header}>📝 Rich Text Editor</Text>
-          <Text style={styles.subtitle}>Expo module with customizable toolbar</Text>
-          
-          <View style={styles.navigationContainer}>
+          <View style={styles.headerSection}>
+            <Text style={styles.header}>Rich Text Editor</Text>
+            <Text style={styles.subtitle}>Professional editor with adaptive toolbars</Text>
+            
             <TouchableOpacity 
-              style={styles.navButton} 
+              style={styles.devButton} 
               onPress={() => setShowTest(true)}
             >
-              <Text style={styles.navButtonText}>🧪 Advanced Testing</Text>
+              <Text style={styles.devButtonText}>⚡ Developer Testing</Text>
             </TouchableOpacity>
           </View>
 
           {renderDemoSelector()}
           
-          <Group name={`${currentDemo.charAt(0).toUpperCase() + currentDemo.slice(1)} Toolbar Demo`}>
+          <View style={styles.editorSection}>
+            <View style={styles.editorHeader}>
+              <Text style={styles.editorTitle}>
+                {currentDemo === 'basic' ? 'Default Editor' :
+                 currentDemo === 'wordpress' ? 'WordPress Block Editor Style' :
+                 currentDemo === 'samsung' ? 'Samsung Notes Style' :
+                 'Gutenberg Editor Style'}
+              </Text>
+              <Text style={styles.editorFeatures}>
+                {currentDemo === 'basic' ? 'Standard formatting options' :
+                 currentDemo === 'wordpress' ? 'Adaptive • Grouped • Comfortable density' :
+                 currentDemo === 'samsung' ? 'Adaptive • Compact • Scrollable' :
+                 'Adaptive • Grouped • Block-style'}
+              </Text>
+            </View>
+            
             <RichTextEditor
               ref={rteRef}
               content={content}
-              placeholder="Start typing your rich text here... Select text and use the toolbar buttons above to format it."
+              placeholder={`✨ Start writing with ${currentDemo === 'basic' ? 'basic' : currentDemo} editor style...\n\nSelect text to format it, or use the toolbar above.`}
               onChange={({ nativeEvent }) => {
                 console.log('Content changed:', nativeEvent.content);
               }}
@@ -181,7 +226,7 @@ export default function App() {
               showToolbar={true}
               toolbarConfig={getToolbarConfig()}
             />
-          </Group>
+          </View>
 
           <Group name="Quick Actions">
             <View style={styles.actionGrid}>
@@ -228,115 +273,196 @@ function Group(props: { name: string; children: React.ReactNode }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#f1f3f4',
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 20,
+    paddingBottom: 32,
+  },
+  
+  // Header Section
+  headerSection: {
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 16,
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#e8eaed',
   },
   header: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    color: '#212529',
-    marginTop: 20,
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#1f2937',
     marginBottom: 8,
+    letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 16,
+    color: '#6b7280',
+    marginBottom: 20,
     textAlign: 'center',
-    color: '#6c757d',
-    marginBottom: 20,
-    fontStyle: 'italic',
   },
-  navigationContainer: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  navButton: {
-    backgroundColor: '#28a745',
+  devButton: {
+    backgroundColor: '#6366f1',
     paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 25,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    paddingVertical: 10,
+    borderRadius: 20,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#6366f1',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
-  navButtonText: {
-    color: '#fff',
+  devButtonText: {
+    color: '#ffffff',
     fontWeight: '600',
-    fontSize: 16,
+    fontSize: 14,
   },
+
+  // Demo Selector
   demoSelector: {
-    marginHorizontal: 20,
-    marginBottom: 20,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    marginHorizontal: 16,
+    marginVertical: 16,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 20,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
   demoSelectorTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#495057',
-    marginBottom: 12,
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1f2937',
+    marginBottom: 8,
     textAlign: 'center',
+  },
+  demoSelectorSubtitle: {
+    fontSize: 14,
+    color: '#6b7280',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  demoScrollView: {
+    marginHorizontal: -8,
   },
   demoButtons: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    paddingHorizontal: 8,
   },
-  demoButton: {
-    flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    marginHorizontal: 4,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#dee2e6',
-    alignItems: 'center',
-  },
-  demoButtonActive: {
-    backgroundColor: '#007AFF',
-    borderColor: '#0056CC',
-  },
-  demoButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#495057',
-  },
-  demoButtonTextActive: {
-    color: '#fff',
-  },
-  group: {
-    marginHorizontal: 20,
-    marginBottom: 20,
-    backgroundColor: '#fff',
+  demoCard: {
+    backgroundColor: '#f9fafb',
     borderRadius: 12,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    padding: 16,
+    marginHorizontal: 6,
+    minWidth: 100,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#e5e7eb',
   },
-  groupHeader: {
-    fontSize: 20,
+  demoCardActive: {
+    backgroundColor: '#eff6ff',
+    borderColor: '#3b82f6',
+  },
+  demoCardIcon: {
+    fontSize: 24,
+    marginBottom: 8,
+  },
+  demoCardTitle: {
+    fontSize: 14,
     fontWeight: '600',
-    color: '#495057',
-    marginBottom: 16,
+    color: '#374151',
+    marginBottom: 4,
+  },
+  demoCardTitleActive: {
+    color: '#3b82f6',
+  },
+  demoCardDesc: {
+    fontSize: 12,
+    color: '#6b7280',
+    textAlign: 'center',
+  },
+
+  // Editor Section
+  editorSection: {
+    marginHorizontal: 16,
+    marginBottom: 24,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
+  },
+  editorHeader: {
+    padding: 20,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#e5e7eb',
+    backgroundColor: '#fafbfc',
+  },
+  editorTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1f2937',
+    marginBottom: 4,
+  },
+  editorFeatures: {
+    fontSize: 14,
+    color: '#6b7280',
   },
   editor: {
-    height: 320,
+    minHeight: 300,
+  },
+
+  // Other components
+  group: {
+    marginHorizontal: 16,
+    marginBottom: 20,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 20,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  groupHeader: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1f2937',
+    marginBottom: 16,
   },
   actionGrid: {
     flexDirection: 'row',
@@ -345,18 +471,13 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     width: '48%',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#f9fafb',
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#dee2e6',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    borderColor: '#e5e7eb',
   },
   actionButtonIcon: {
     fontSize: 24,
@@ -365,26 +486,26 @@ const styles = StyleSheet.create({
   actionButtonText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#495057',
+    color: '#374151',
   },
   contentLabel: {
     fontSize: 16,
-    fontWeight: '500',
-    color: '#495057',
+    fontWeight: '600',
+    color: '#1f2937',
     marginBottom: 8,
   },
   contentPreview: {
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#f9fafb',
     borderRadius: 8,
     padding: 12,
     maxHeight: 120,
     borderWidth: 1,
-    borderColor: '#dee2e6',
+    borderColor: '#e5e7eb',
   },
   contentText: {
     fontSize: 12,
-    color: '#6c757d',
-    fontFamily: 'monospace',
+    color: '#6b7280',
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
     lineHeight: 18,
   },
 });
