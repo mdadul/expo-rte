@@ -85,42 +85,41 @@ class ExpoRTEView: ExpoView {
   
   func format(type: String, value: String?) {
     DispatchQueue.main.async {
-      guard self.textView.selectedTextRange != nil else { return }
-      let nsRange = self.textView.selectedRange
+      let selectedRange = self.textView.selectedRange
       
-      if nsRange.length == 0 { return } // No selection
+      if selectedRange.length == 0 { return } // No selection
       
       let mutableString = NSMutableAttributedString(attributedString: self.textView.attributedText)
+      let currentFont = self.textView.font ?? UIFont.systemFont(ofSize: 16)
       
       switch type {
       case "bold":
-        mutableString.addAttribute(.font, value: UIFont.boldSystemFont(ofSize: 16), range: nsRange)
+        let boldFont = UIFont.boldSystemFont(ofSize: currentFont.pointSize)
+        mutableString.addAttribute(.font, value: boldFont, range: selectedRange)
       case "italic":
-        mutableString.addAttribute(.font, value: UIFont.italicSystemFont(ofSize: 16), range: nsRange)
+        let italicFont = UIFont.italicSystemFont(ofSize: currentFont.pointSize)
+        mutableString.addAttribute(.font, value: italicFont, range: selectedRange)
       case "underline":
-        mutableString.addAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: nsRange)
+        mutableString.addAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: selectedRange)
       case "strikethrough":
-        mutableString.addAttribute(.strikethroughStyle, value: NSUnderlineStyle.single.rawValue, range: nsRange)
+        mutableString.addAttribute(.strikethroughStyle, value: NSUnderlineStyle.single.rawValue, range: selectedRange)
       case "link":
         if let urlString = value, let url = URL(string: urlString) {
-          mutableString.addAttribute(.link, value: url, range: nsRange)
+          mutableString.addAttribute(.link, value: url, range: selectedRange)
+          mutableString.addAttribute(.foregroundColor, value: UIColor.systemBlue, range: selectedRange)
         }
       default:
         break
       }
       
+      // Preserve selection after applying formatting
+      let savedRange = selectedRange
       self.textView.attributedText = mutableString
+      self.textView.selectedRange = savedRange
     }
   }
   
-  func insertImage(uri: String, width: Int?, height: Int?) {
-    DispatchQueue.main.async {
-      // For now, insert a placeholder text for the image
-      // In a real implementation, you would load the image asynchronously
-      let imageText = "[Image: \(uri)]"
-      self.textView.insertText(imageText)
-    }
-  }
+  // Image functionality removed for stability
   
   func undo() {
     DispatchQueue.main.async {

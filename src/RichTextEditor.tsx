@@ -8,7 +8,6 @@ export interface RichTextEditorRef {
   setContent: (content: string) => Promise<void>;
   getContent: () => Promise<string>;
   format: (type: FormatType, value?: any) => Promise<void>;
-  insertImage: (uri: string, width?: number, height?: number) => Promise<void>;
   undo: () => Promise<void>;
   redo: () => Promise<void>;
 }
@@ -24,8 +23,6 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
       setContent: (content: string) => ExpoRTEModule.setContent(content),
       getContent: () => ExpoRTEModule.getContent(),
       format: (type: FormatType, value?: any) => ExpoRTEModule.format(type, value),
-      insertImage: (uri: string, width?: number, height?: number) => 
-        ExpoRTEModule.insertImage(uri, width, height),
       undo: () => ExpoRTEModule.undo(),
       redo: () => ExpoRTEModule.redo(),
     }));

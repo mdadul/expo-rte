@@ -75,53 +75,48 @@ class ExpoRTEView(context: Context, appContext: AppContext) : ExpoView(context, 
   }
 
   fun format(type: String, value: Any?) {
-    val start = editText.selectionStart
-    val end = editText.selectionEnd
-    
-    if (start == end) return // No selection
-    
-    val spannable = editText.text as SpannableStringBuilder
-    
-    when (type) {
-      "bold" -> {
-        val boldSpan = StyleSpan(Typeface.BOLD)
-        spannable.setSpan(boldSpan, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+    post {
+      val start = editText.selectionStart
+      val end = editText.selectionEnd
+      
+      if (start == end) return@post // No selection
+      
+      val spannable = editText.text as SpannableStringBuilder
+      
+      when (type) {
+        "bold" -> {
+          val boldSpan = StyleSpan(Typeface.BOLD)
+          spannable.setSpan(boldSpan, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+        "italic" -> {
+          val italicSpan = StyleSpan(Typeface.ITALIC)
+          spannable.setSpan(italicSpan, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+        "underline" -> {
+          val underlineSpan = UnderlineSpan()
+          spannable.setSpan(underlineSpan, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+        "strikethrough" -> {
+          val strikethroughSpan = StrikethroughSpan()
+          spannable.setSpan(strikethroughSpan, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+        "bullet" -> {
+          val bulletSpan = BulletSpan()
+          spannable.setSpan(bulletSpan, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+        "link" -> {
+          val url = value?.toString() ?: "http://example.com"
+          val urlSpan = URLSpan(url)
+          spannable.setSpan(urlSpan, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
       }
-      "italic" -> {
-        val italicSpan = StyleSpan(Typeface.ITALIC)
-        spannable.setSpan(italicSpan, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-      }
-      "underline" -> {
-        val underlineSpan = UnderlineSpan()
-        spannable.setSpan(underlineSpan, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-      }
-      "strikethrough" -> {
-        val strikethroughSpan = StrikethroughSpan()
-        spannable.setSpan(strikethroughSpan, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-      }
-      "bullet" -> {
-        val bulletSpan = BulletSpan()
-        spannable.setSpan(bulletSpan, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-      }
-      "link" -> {
-        val url = value?.toString() ?: "http://example.com"
-        val urlSpan = URLSpan(url)
-        spannable.setSpan(urlSpan, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-      }
+      
+      // Keep selection after formatting
+      editText.setSelection(start, end)
     }
   }
 
-  fun insertImage(uri: String, width: Int?, height: Int?) {
-    post {
-      val cursor = editText.selectionStart
-      val spannable = editText.text as SpannableStringBuilder
-      
-      // For now, insert a placeholder text for the image
-      // In a real implementation, you would load the image asynchronously
-      val imageText = "[Image: $uri]"
-      spannable.insert(cursor, imageText)
-    }
-  }
+  // Image functionality removed for stability
 
   fun undo() {
     post {

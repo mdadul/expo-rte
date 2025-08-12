@@ -28,10 +28,7 @@ class ExpoRTEModule : Module() {
       getCurrentRTEView()?.format(type, value)
     }
 
-    // Insert image into the editor
-    AsyncFunction("insertImage") { uri: String, width: Int?, height: Int? ->
-      getCurrentRTEView()?.insertImage(uri, width, height)
-    }
+    // Image functionality removed for stability
 
     // Undo last action
     AsyncFunction("undo") { ->

@@ -6,7 +6,6 @@ declare class ExpoRTEModule extends NativeModule<ExpoRTEModuleEvents> {
   setContent(content: string): Promise<void>;
   getContent(): Promise<string>;
   format(type: FormatType, value?: any): Promise<void>;
-  insertImage(uri: string, width?: number, height?: number): Promise<void>;
   undo(): Promise<void>;
   redo(): Promise<void>;
 }

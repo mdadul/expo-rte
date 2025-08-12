@@ -25,10 +25,6 @@ export default function App() {
     Alert.alert('Current Content', currentContent || 'No content');
   };
 
-  const handleInsertImage = async () => {
-    await rteRef.current?.insertImage('https://via.placeholder.com/150', 150, 100);
-  };
-
   const handleAddLink = async () => {
     await rteRef.current?.format('link', 'https://expo.dev');
   };
@@ -57,7 +53,6 @@ export default function App() {
             <Button title="Get Content" onPress={handleGetContent} />
           </View>
           <View style={styles.buttonRow}>
-            <Button title="Insert Image" onPress={handleInsertImage} />
             <Button title="Add Link" onPress={handleAddLink} />
           </View>
         </Group>

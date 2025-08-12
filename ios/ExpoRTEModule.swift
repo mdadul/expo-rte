@@ -25,10 +25,7 @@ public class ExpoRTEModule: Module {
       ExpoRTEView.currentFocusedView?.format(type: type, value: value)
     }
 
-    // Insert image into the editor
-    AsyncFunction("insertImage") { (uri: String, width: Int?, height: Int?) in
-      ExpoRTEView.currentFocusedView?.insertImage(uri: uri, width: width, height: height)
-    }
+    // Image functionality removed for stability
 
     // Undo last action
     AsyncFunction("undo") { () in

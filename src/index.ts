@@ -27,9 +27,7 @@ export function format(type: FormatType, value?: any): Promise<void> {
   return ExpoRTEModule.format(type, value);
 }
 
-export function insertImage(uri: string, width?: number, height?: number): Promise<void> {
-  return ExpoRTEModule.insertImage(uri, width, height);
-}
+// Image functionality removed for stability
 
 export function undo(): Promise<void> {
   return ExpoRTEModule.undo();
