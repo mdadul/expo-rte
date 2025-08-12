@@ -79,7 +79,7 @@ class ExpoRTEView: ExpoView {
     textView.isEditable = editable
   }
   
-  func format(type: String, value: Any?) {
+  func format(type: String, value: String?) {
     guard let selectedRange = textView.selectedTextRange else { return }
     let nsRange = textView.selectedRange
     
@@ -97,7 +97,7 @@ class ExpoRTEView: ExpoView {
     case "strikethrough":
       mutableString.addAttribute(.strikethroughStyle, value: NSUnderlineStyle.single.rawValue, range: nsRange)
     case "link":
-      if let urlString = value as? String, let url = URL(string: urlString) {
+      if let urlString = value, let url = URL(string: urlString) {
         mutableString.addAttribute(.link, value: url, range: nsRange)
       }
     default:

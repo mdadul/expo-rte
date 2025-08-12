@@ -18,7 +18,7 @@ public class ExpoRTEModule: Module {
     }
 
     // Apply formatting to selected text
-    AsyncFunction("format") { (type: String, value: Any?) in
+    AsyncFunction("format") { (type: String, value: String?) in
       ExpoRTEView.currentFocusedView?.format(type: type, value: value)
     }
 
