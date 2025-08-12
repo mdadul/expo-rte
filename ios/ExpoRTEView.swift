@@ -80,7 +80,7 @@ class ExpoRTEView: ExpoView {
   }
   
   func format(type: String, value: String?) {
-    guard let selectedRange = textView.selectedTextRange else { return }
+    guard textView.selectedTextRange != nil else { return }
     let nsRange = textView.selectedRange
     
     if nsRange.length == 0 { return } // No selection
