@@ -23,9 +23,16 @@ class ExpoRTEModule : Module() {
       getCurrentRTEView()?.getContent() ?: ""
     }
 
-    // Apply formatting to selected text
+    // Apply formatting to selected text with value
     AsyncFunction("format") { type: String, value: Any? ->
+      android.util.Log.d("ExpoRTEModule", "format() called with type=$type, value=$value")
       getCurrentRTEView()?.format(type, value)
+    }
+    
+    // Apply formatting to selected text without value (overload)
+    AsyncFunction("formatSimple") { type: String ->
+      android.util.Log.d("ExpoRTEModule", "formatSimple() called with type=$type")
+      getCurrentRTEView()?.format(type, null)
     }
 
     // Image functionality removed for stability

@@ -5,7 +5,8 @@ import { ExpoRTEModuleEvents, FormatType } from './ExpoRTE.types';
 declare class ExpoRTEModule extends NativeModule<ExpoRTEModuleEvents> {
   setContent(content: string): Promise<void>;
   getContent(): Promise<string>;
-  format(type: FormatType, value?: any): Promise<void>;
+  format(type: FormatType, value: any): Promise<void>;
+  formatSimple(type: FormatType): Promise<void>;
   undo(): Promise<void>;
   redo(): Promise<void>;
 }

@@ -24,7 +24,11 @@ export function getContent(): Promise<string> {
 }
 
 export function format(type: FormatType, value?: any): Promise<void> {
-  return ExpoRTEModule.format(type, value);
+  if (value !== undefined && value !== null) {
+    return ExpoRTEModule.format(type, value);
+  } else {
+    return ExpoRTEModule.formatSimple(type);
+  }
 }
 
 // Image functionality removed for stability

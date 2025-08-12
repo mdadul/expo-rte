@@ -22,13 +22,23 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
     useImperativeHandle(ref, () => ({
       setContent: (content: string) => ExpoRTEModule.setContent(content),
       getContent: () => ExpoRTEModule.getContent(),
-      format: (type: FormatType, value?: any) => ExpoRTEModule.format(type, value),
+      format: (type: FormatType, value?: any) => {
+        if (value !== undefined && value !== null) {
+          return ExpoRTEModule.format(type, value);
+        } else {
+          return ExpoRTEModule.formatSimple(type);
+        }
+      },
       undo: () => ExpoRTEModule.undo(),
       redo: () => ExpoRTEModule.redo(),
     }));
 
     const handleFormat = (type: FormatType, value?: any) => {
-      ExpoRTEModule.format(type, value);
+      if (value !== undefined && value !== null) {
+        ExpoRTEModule.format(type, value);
+      } else {
+        ExpoRTEModule.formatSimple(type);
+      }
     };
 
     const renderToolbar = () => (

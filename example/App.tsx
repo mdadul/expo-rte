@@ -1,11 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import * as ExpoRTE from 'expo-rte';
 import { RichTextEditor, RichTextEditorRef } from 'expo-rte';
-import { Button, SafeAreaView, ScrollView, Text, View, Alert } from 'react-native';
+import { Button, SafeAreaView, ScrollView, Text, View, Alert, TouchableOpacity } from 'react-native';
+import TestFormatting from './TestFormatting';
 
 export default function App() {
   const [content, setContent] = useState('<p>Welcome to the <strong>Rich Text Editor</strong>!</p><p>Try selecting text and using the formatting buttons above.</p>');
   const [lastChange, setLastChange] = useState<string>('No changes yet');
+  const [showTest, setShowTest] = useState(false);
   const rteRef = useRef<RichTextEditorRef>(null);
   
   useEffect(() => {
@@ -29,10 +31,49 @@ export default function App() {
     await rteRef.current?.format('link', 'https://expo.dev');
   };
 
+  const testDirectFormat = async () => {
+    try {
+      console.log('Testing direct format calls...');
+      await ExpoRTE.format('bold', null);
+      console.log('Direct bold format: SUCCESS');
+      await ExpoRTE.format('italic', null);
+      console.log('Direct italic format: SUCCESS');
+      await ExpoRTE.format('link', 'https://expo.dev');
+      console.log('Direct link format: SUCCESS');
+    } catch (error) {
+      console.error('Direct format test failed:', error);
+    }
+  };
+
+  if (showTest) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.switchContainer}>
+          <TouchableOpacity 
+            style={styles.switchButton} 
+            onPress={() => setShowTest(false)}
+          >
+            <Text style={styles.switchButtonText}>← Back to Main Demo</Text>
+          </TouchableOpacity>
+        </View>
+        <TestFormatting />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.container}>
         <Text style={styles.header}>Expo Rich Text Editor</Text>
+        
+        <View style={styles.switchContainer}>
+          <TouchableOpacity 
+            style={styles.switchButton} 
+            onPress={() => setShowTest(true)}
+          >
+            <Text style={styles.switchButtonText}>Go to Formatting Test →</Text>
+          </TouchableOpacity>
+        </View>
         
         <Group name="Rich Text Editor">
           <RichTextEditor
@@ -54,6 +95,7 @@ export default function App() {
           </View>
           <View style={styles.buttonRow}>
             <Button title="Add Link" onPress={handleAddLink} />
+            <Button title="Test Direct Format" onPress={testDirectFormat} />
           </View>
         </Group>
         
@@ -103,6 +145,20 @@ const styles = {
   container: {
     flex: 1,
     backgroundColor: '#f0f0f0',
+  },
+  switchContainer: {
+    padding: 10,
+    alignItems: 'center',
+  },
+  switchButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 6,
+  },
+  switchButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
   editor: {
     height: 300,
