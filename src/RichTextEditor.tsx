@@ -1,4 +1,4 @@
-import React, { useRef, useImperativeHandle, forwardRef } from 'react';
+import React, { useImperativeHandle, forwardRef } from 'react';
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import ExpoRTEView from './ExpoRTEView';
 import ExpoRTEModule from './ExpoRTEModule';
@@ -19,7 +19,6 @@ interface RichTextEditorProps extends ExpoRTEViewProps {
 
 const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
   ({ showToolbar = true, style, ...props }, ref) => {
-    const rteViewRef = useRef<any>(null);
 
     useImperativeHandle(ref, () => ({
       setContent: (content: string) => ExpoRTEModule.setContent(content),
