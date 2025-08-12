@@ -1,48 +1,63 @@
 import ExpoModulesCore
 
 public class ExpoRTEModule: Module {
-  // Each module class must implement the definition function. The definition consists of components
-  // that describes the module's functionality and behavior.
-  // See https://docs.expo.dev/modules/module-api for more details about available components.
   public func definition() -> ModuleDefinition {
-    // Sets the name of the module that JavaScript code will use to refer to the module. Takes a string as an argument.
-    // Can be inferred from module's class name, but it's recommended to set it explicitly for clarity.
-    // The module will be accessible from `requireNativeModule('ExpoRTE')` in JavaScript.
     Name("ExpoRTE")
-
-    // Sets constant properties on the module. Can take a dictionary or a closure that returns a dictionary.
-    Constants([
-      "PI": Double.pi
-    ])
 
     // Defines event names that the module can send to JavaScript.
     Events("onChange")
 
-    // Defines a JavaScript synchronous function that runs the native code on the JavaScript thread.
-    Function("hello") {
-      return "Hello world! 👋"
+    // Set content in the current focused RTE view
+    AsyncFunction("setContent") { (content: String) in
+      ExpoRTEView.currentFocusedView?.setContent(content)
     }
 
-    // Defines a JavaScript function that always returns a Promise and whose native code
-    // is by default dispatched on the different thread than the JavaScript runtime runs on.
-    AsyncFunction("setValueAsync") { (value: String) in
-      // Send an event to JavaScript.
-      self.sendEvent("onChange", [
-        "value": value
-      ])
+    // Get content from the current focused RTE view
+    AsyncFunction("getContent") { () -> String in
+      return ExpoRTEView.currentFocusedView?.getContent() ?? ""
     }
 
-    // Enables the module to be used as a native view. Definition components that are accepted as part of the
-    // view definition: Prop, Events.
+    // Apply formatting to selected text
+    AsyncFunction("format") { (type: String, value: Any?) in
+      ExpoRTEView.currentFocusedView?.format(type: type, value: value)
+    }
+
+    // Insert image into the editor
+    AsyncFunction("insertImage") { (uri: String, width: Int?, height: Int?) in
+      ExpoRTEView.currentFocusedView?.insertImage(uri: uri, width: width, height: height)
+    }
+
+    // Undo last action
+    AsyncFunction("undo") { () in
+      ExpoRTEView.currentFocusedView?.undo()
+    }
+
+    // Redo last undone action
+    AsyncFunction("redo") { () in
+      ExpoRTEView.currentFocusedView?.redo()
+    }
+
+    // Enables the module to be used as a native view
     View(ExpoRTEView.self) {
-      // Defines a setter for the `url` prop.
-      Prop("url") { (view: ExpoRTEView, url: URL) in
-        if view.webView.url != url {
-          view.webView.load(URLRequest(url: url))
+      // Content prop to set initial content
+      Prop("content") { (view: ExpoRTEView, content: String?) in
+        if let content = content {
+          view.setContent(content)
         }
       }
 
-      Events("onLoad")
+      // Placeholder prop
+      Prop("placeholder") { (view: ExpoRTEView, placeholder: String?) in
+        view.setPlaceholder(placeholder ?? "")
+      }
+
+      // Editable prop
+      Prop("editable") { (view: ExpoRTEView, editable: Bool) in
+        view.setEditable(editable)
+      }
+
+      // Content change event
+      Events("onChange")
     }
   }
 }
