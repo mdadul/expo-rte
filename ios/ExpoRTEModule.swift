@@ -4,8 +4,11 @@ public class ExpoRTEModule: Module {
   public func definition() -> ModuleDefinition {
     Name("ExpoRTE")
 
-    // Defines event names that the module can send to JavaScript.
     Events("onChange")
+
+    OnCreate {
+      ExpoRTEView.moduleInstance = self
+    }
 
     // Set content in the current focused RTE view
     AsyncFunction("setContent") { (content: String) in
@@ -55,9 +58,6 @@ public class ExpoRTEModule: Module {
       Prop("editable") { (view: ExpoRTEView, editable: Bool) in
         view.setEditable(editable)
       }
-
-      // Content change event
-      Events("onChange")
     }
   }
 }

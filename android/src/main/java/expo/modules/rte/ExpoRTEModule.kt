@@ -4,10 +4,13 @@ import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 
 class ExpoRTEModule : Module() {
+  init {
+    ExpoRTEView.moduleInstance = this
+  }
+
   override fun definition() = ModuleDefinition {
     Name("ExpoRTE")
 
-    // Defines event names that the module can send to JavaScript.
     Events("onChange")
 
     // Set content in the current focused RTE view
@@ -56,9 +59,6 @@ class ExpoRTEModule : Module() {
       Prop("editable") { view: ExpoRTEView, editable: Boolean ->
         view.setEditable(editable)
       }
-
-      // Content change event
-      Events("onChange")
     }
   }
 

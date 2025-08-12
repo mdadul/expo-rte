@@ -1,13 +1,20 @@
-import React, { useState, useRef } from 'react';
-import { useEvent } from 'expo';
-import ExpoRTE, { RichTextEditor, RichTextEditorRef } from 'expo-rte';
+import React, { useState, useRef, useEffect } from 'react';
+import * as ExpoRTE from 'expo-rte';
+import { RichTextEditor, RichTextEditorRef } from 'expo-rte';
 import { Button, SafeAreaView, ScrollView, Text, View, Alert } from 'react-native';
 
 export default function App() {
   const [content, setContent] = useState('<p>Welcome to the <strong>Rich Text Editor</strong>!</p><p>Try selecting text and using the formatting buttons above.</p>');
+  const [lastChange, setLastChange] = useState<string>('No changes yet');
   const rteRef = useRef<RichTextEditorRef>(null);
   
-  const onChangePayload = useEvent(ExpoRTE, 'onChange');
+  useEffect(() => {
+    const subscription = ExpoRTE.addChangeListener(({ content }) => {
+      setLastChange(content);
+    });
+
+    return () => subscription.remove();
+  }, []);
 
   const handleSetContent = async () => {
     await rteRef.current?.setContent('<p>This is <em>newly set</em> content with <strong>formatting</strong>!</p>');
@@ -57,7 +64,7 @@ export default function App() {
         
         <Group name="Events">
           <Text>Last content change:</Text>
-          <Text style={styles.eventText}>{onChangePayload?.content || 'No changes yet'}</Text>
+          <Text style={styles.eventText}>{lastChange}</Text>
         </Group>
       </ScrollView>
     </SafeAreaView>

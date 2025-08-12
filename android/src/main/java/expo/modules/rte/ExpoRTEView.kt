@@ -7,17 +7,17 @@ import android.text.method.LinkMovementMethod
 import android.text.style.*
 import android.widget.EditText
 import android.widget.TextView
+import androidx.core.os.bundleOf
 import expo.modules.kotlin.AppContext
-import expo.modules.kotlin.viewevent.EventDispatcher
 import expo.modules.kotlin.views.ExpoView
 import java.util.*
 
 class ExpoRTEView(context: Context, appContext: AppContext) : ExpoView(context, appContext) {
   companion object {
     var currentFocusedView: ExpoRTEView? = null
+    var moduleInstance: ExpoRTEModule? = null
   }
 
-  private val onChange by EventDispatcher()
   private val editText: EditText
   private val undoStack = Stack<CharSequence>()
   private val redoStack = Stack<CharSequence>()
@@ -37,7 +37,9 @@ class ExpoRTEView(context: Context, appContext: AppContext) : ExpoView(context, 
         override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
 
         override fun afterTextChanged(s: Editable?) {
-          onChange(mapOf("content" to getHtmlContent()))
+          post {
+            moduleInstance?.sendEvent("onChange", bundleOf("content" to getHtmlContent()))
+          }
         }
       })
 
@@ -57,7 +59,7 @@ class ExpoRTEView(context: Context, appContext: AppContext) : ExpoView(context, 
     } else {
       SpannableString(content)
     }
-    editText.setText(spanned, TextView.BufferType.SPANNABLE)
+    editText.setText(spanned, android.widget.TextView.BufferType.SPANNABLE)
   }
 
   fun getContent(): String {
@@ -110,32 +112,38 @@ class ExpoRTEView(context: Context, appContext: AppContext) : ExpoView(context, 
   }
 
   fun insertImage(uri: String, width: Int?, height: Int?) {
-    val cursor = editText.selectionStart
-    val spannable = editText.text as SpannableStringBuilder
-    
-    // For now, insert a placeholder text for the image
-    // In a real implementation, you would load the image asynchronously
-    val imageText = "[Image: $uri]"
-    spannable.insert(cursor, imageText)
+    post {
+      val cursor = editText.selectionStart
+      val spannable = editText.text as SpannableStringBuilder
+      
+      // For now, insert a placeholder text for the image
+      // In a real implementation, you would load the image asynchronously
+      val imageText = "[Image: $uri]"
+      spannable.insert(cursor, imageText)
+    }
   }
 
   fun undo() {
-    if (undoStack.isNotEmpty()) {
-      val currentText = editText.text
-      redoStack.push(currentText)
-      val previousText = undoStack.pop()
-      editText.setText(previousText)
-      editText.setSelection(previousText.length)
+    post {
+      if (undoStack.isNotEmpty()) {
+        val currentText = editText.text
+        redoStack.push(currentText)
+        val previousText = undoStack.pop()
+        editText.setText(previousText)
+        editText.setSelection(previousText.length)
+      }
     }
   }
 
   fun redo() {
-    if (redoStack.isNotEmpty()) {
-      val currentText = editText.text
-      undoStack.push(currentText)
-      val nextText = redoStack.pop()
-      editText.setText(nextText)
-      editText.setSelection(nextText.length)
+    post {
+      if (redoStack.isNotEmpty()) {
+        val currentText = editText.text
+        undoStack.push(currentText)
+        val nextText = redoStack.pop()
+        editText.setText(nextText)
+        editText.setSelection(nextText.length)
+      }
     }
   }
 

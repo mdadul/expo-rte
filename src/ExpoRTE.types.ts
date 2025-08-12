@@ -2,12 +2,12 @@ import type { StyleProp, ViewStyle } from 'react-native';
 
 export type FormatType = 'bold' | 'italic' | 'underline' | 'strikethrough' | 'bullet' | 'numbered' | 'link';
 
-export type ExpoRTEModuleEvents = {
-  onChange: (params: ChangeEventPayload) => void;
-};
-
 export type ChangeEventPayload = {
   content: string;
+};
+
+export type ExpoRTEModuleEvents = {
+  onChange: (params: ChangeEventPayload) => void;
 };
 
 export type ExpoRTEViewProps = {
