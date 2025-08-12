@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android", "web"],
+  "apple": {
+    "modules": ["ExpoRTEModule"]
+  },
+  "android": {
+    "modules": ["expo.modules.rte.ExpoRTEModule"]
+  }
+}
