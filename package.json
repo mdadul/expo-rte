@@ -1,6 +1,6 @@
 {
   "name": "expo-rte",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A cross-platform native rich text editor for React Native and Expo with adaptive toolbar and customizable styling options.",
   "main": "build/index.js",
   "types": "build/index.d.ts",

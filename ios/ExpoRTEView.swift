@@ -86,28 +86,36 @@ class ExpoRTEView: ExpoView {
   func format(type: String, value: String?) {
     DispatchQueue.main.async {
       let selectedRange = self.textView.selectedRange
-      
-      if selectedRange.length == 0 { return } // No selection
-      
       let mutableString = NSMutableAttributedString(attributedString: self.textView.attributedText)
       let currentFont = self.textView.font ?? UIFont.systemFont(ofSize: 16)
       
       switch type {
       case "bold":
+        if selectedRange.length == 0 { return } 
         let boldFont = UIFont.boldSystemFont(ofSize: currentFont.pointSize)
         mutableString.addAttribute(.font, value: boldFont, range: selectedRange)
       case "italic":
+        if selectedRange.length == 0 { return } 
         let italicFont = UIFont.italicSystemFont(ofSize: currentFont.pointSize)
         mutableString.addAttribute(.font, value: italicFont, range: selectedRange)
       case "underline":
+        if selectedRange.length == 0 { return } 
         mutableString.addAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: selectedRange)
       case "strikethrough":
+        if selectedRange.length == 0 { return }
         mutableString.addAttribute(.strikethroughStyle, value: NSUnderlineStyle.single.rawValue, range: selectedRange)
       case "link":
+        if selectedRange.length == 0 { return } 
         if let urlString = value, let url = URL(string: urlString) {
           mutableString.addAttribute(.link, value: url, range: selectedRange)
           mutableString.addAttribute(.foregroundColor, value: UIColor.systemBlue, range: selectedRange)
         }
+      case "bullet":
+        self.applyListFormatting(mutableString: mutableString, listType: .bullet)
+        return // Early return as applyListFormatting handles text view update
+      case "numbered":
+        self.applyListFormatting(mutableString: mutableString, listType: .numbered)
+        return // Early return as applyListFormatting handles text view update
       default:
         break
       }
@@ -120,6 +128,98 @@ class ExpoRTEView: ExpoView {
   }
   
   // Image functionality removed for stability
+  
+  enum ListType {
+    case bullet
+    case numbered
+  }
+  
+  private func applyListFormatting(mutableString: NSMutableAttributedString, listType: ListType) {
+    let selectedRange = self.textView.selectedRange
+    let text = mutableString.string
+    
+    // Find the start and end of the current paragraph(s)
+    let paragraphRange = self.getParagraphRange(from: selectedRange, in: text)
+    
+    // Split the text into lines within the paragraph range
+    let paragraphText = String(text[text.index(text.startIndex, offsetBy: paragraphRange.location)..<text.index(text.startIndex, offsetBy: paragraphRange.location + paragraphRange.length)])
+    let lines = paragraphText.components(separatedBy: .newlines)
+    
+    var newText = ""
+    
+    for (index, line) in lines.enumerated() {
+      let trimmedLine = line.trimmingCharacters(in: .whitespaces)
+      
+      // Skip empty lines
+      if trimmedLine.isEmpty && index < lines.count - 1 {
+        newText += "\n"
+        continue
+      }
+      
+      // Remove existing list formatting if present
+      let cleanLine = self.removeExistingListFormatting(from: trimmedLine)
+      
+      // Apply new list formatting
+      let formattedLine: String
+      switch listType {
+      case .bullet:
+        formattedLine = "• \(cleanLine)"
+      case .numbered:
+        formattedLine = "\(index + 1). \(cleanLine)"
+      }
+      
+      newText += formattedLine
+      if index < lines.count - 1 {
+        newText += "\n"
+      }
+    }
+    
+    // Replace the paragraph range with the new formatted text
+    mutableString.replaceCharacters(in: paragraphRange, with: newText)
+    
+    // Update the text view
+    let savedRange = selectedRange
+    self.textView.attributedText = mutableString
+    
+    // Adjust selection to account for added list formatting
+    let newSelection = NSRange(location: savedRange.location, length: savedRange.length)
+    self.textView.selectedRange = newSelection
+  }
+  
+  private func getParagraphRange(from selectedRange: NSRange, in text: String) -> NSRange {
+    let nsText = text as NSString
+    
+    // If nothing is selected, work with the current line
+    if selectedRange.length == 0 {
+      return nsText.paragraphRange(for: selectedRange)
+    }
+    
+    // If text is selected, work with all paragraphs that contain the selection
+    let startParagraphRange = nsText.paragraphRange(for: NSRange(location: selectedRange.location, length: 0))
+    let endParagraphRange = nsText.paragraphRange(for: NSRange(location: selectedRange.location + selectedRange.length - 1, length: 0))
+    
+    return NSRange(location: startParagraphRange.location, 
+                   length: endParagraphRange.location + endParagraphRange.length - startParagraphRange.location)
+  }
+  
+  private func removeExistingListFormatting(from line: String) -> String {
+    let trimmed = line.trimmingCharacters(in: .whitespaces)
+    
+    // Remove bullet point formatting
+    if trimmed.hasPrefix("• ") {
+      return String(trimmed.dropFirst(2))
+    }
+    
+    // Remove numbered list formatting (pattern: number. text)
+    let numberedRegex = try! NSRegularExpression(pattern: "^\\d+\\. ", options: [])
+    let range = NSRange(location: 0, length: trimmed.count)
+    if numberedRegex.firstMatch(in: trimmed, options: [], range: range) != nil {
+      let result = numberedRegex.stringByReplacingMatches(in: trimmed, options: [], range: range, withTemplate: "")
+      return result
+    }
+    
+    return trimmed
+  }
   
   func undo() {
     DispatchQueue.main.async {
