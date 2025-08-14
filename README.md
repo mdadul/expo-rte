@@ -9,11 +9,13 @@
 
 **A cross-platform rich text editor for React Native and Expo applications**
 
+
 [Features](#features) • [Installation](#installation) • [Quick Start](#quick-start) • [API](#api) • [Examples](#examples) • [Contributing](#contributing)
 
 </div>
 
 ---
+<img width="1536" height="1024" alt="expo-rte" src="https://github.com/user-attachments/assets/8379cc54-8111-49cb-a9cf-1551c8e8acea" />
 
 ## ✨ Features
 - 🛠️ **Highly Customizable** - Adaptive toolbar with multiple density options
