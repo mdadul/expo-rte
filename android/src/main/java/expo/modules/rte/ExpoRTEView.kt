@@ -19,18 +19,30 @@ class ExpoRTEView(context: Context, appContext: AppContext) : ExpoView(context, 
     var moduleInstance: ExpoRTEModule? = null
   }
 
-  private lateinit var editText: EditText
+  private lateinit var editText: CustomEditText
   private val undoStack = Stack<CharSequence>()
   private val redoStack = Stack<CharSequence>()
   private var isUndoOrRedoInProgress = false
   private var lastSavedHash = 0
+  
+  // Custom EditText to detect selection changes
+  private inner class CustomEditText(context: Context) : EditText(context) {
+    override fun onSelectionChanged(selStart: Int, selEnd: Int) {
+      super.onSelectionChanged(selStart, selEnd)
+      // Send selection change event
+      moduleInstance?.sendEvent("onSelectionChange", bundleOf(
+        "start" to selStart,
+        "end" to selEnd
+      ))
+    }
+  }
 
   init {
     setupEditText()
   }
   
   private fun setupEditText() {
-    editText = EditText(context).apply {
+    editText = CustomEditText(context).apply {
       layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
       movementMethod = LinkMovementMethod.getInstance()
       inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
@@ -483,6 +495,87 @@ class ExpoRTEView(context: Context, appContext: AppContext) : ExpoView(context, 
         android.util.Log.d("ExpoRTEView", "No redo states available")
       }
     }
+  }
+
+  fun getCurrentFormats(): Map<String, Boolean> {
+    val start = editText.selectionStart
+    val end = editText.selectionEnd
+    
+    // If no selection, return all false
+    if (start == end || start < 0 || end < 0) {
+      return mapOf(
+        "bold" to false,
+        "italic" to false,
+        "underline" to false,
+        "strikethrough" to false,
+        "bullet" to false,
+        "numbered" to false
+      )
+    }
+    
+    val spannable = editText.text as? Spanned ?: return mapOf(
+      "bold" to false,
+      "italic" to false,
+      "underline" to false,
+      "strikethrough" to false,
+      "bullet" to false,
+      "numbered" to false
+    )
+    
+    // Check for bold formatting
+    val boldSpans = spannable.getSpans(start, end, StyleSpan::class.java)
+      .filter { span ->
+        val spanStart = spannable.getSpanStart(span)
+        val spanEnd = spannable.getSpanEnd(span)
+        (spanStart < end && spanEnd > start) && 
+        (span.style == Typeface.BOLD || span.style == Typeface.BOLD_ITALIC)
+      }
+    
+    // Check for italic formatting
+    val italicSpans = spannable.getSpans(start, end, StyleSpan::class.java)
+      .filter { span ->
+        val spanStart = spannable.getSpanStart(span)
+        val spanEnd = spannable.getSpanEnd(span)
+        (spanStart < end && spanEnd > start) && 
+        (span.style == Typeface.ITALIC || span.style == Typeface.BOLD_ITALIC)
+      }
+    
+    // Check for underline formatting
+    val underlineSpans = spannable.getSpans(start, end, UnderlineSpan::class.java)
+      .filter { span ->
+        val spanStart = spannable.getSpanStart(span)
+        val spanEnd = spannable.getSpanEnd(span)
+        (spanStart < end && spanEnd > start)
+      }
+    
+    // Check for strikethrough formatting
+    val strikethroughSpans = spannable.getSpans(start, end, StrikethroughSpan::class.java)
+      .filter { span ->
+        val spanStart = spannable.getSpanStart(span)
+        val spanEnd = spannable.getSpanEnd(span)
+        (spanStart < end && spanEnd > start)
+      }
+    
+    // Check for bullet formatting
+    val bulletSpans = spannable.getSpans(start, end, BulletSpan::class.java)
+      .filter { span ->
+        val spanStart = spannable.getSpanStart(span)
+        val spanEnd = spannable.getSpanEnd(span)
+        (spanStart < end && spanEnd > start)
+      }
+    
+    // Check for numbered formatting (simplified check)
+    val lineText = spannable.subSequence(start, end).toString()
+    val hasNumberedFormat = Regex("^\\d+\\. ").containsMatchIn(lineText)
+    
+    return mapOf(
+      "bold" to boldSpans.isNotEmpty(),
+      "italic" to italicSpans.isNotEmpty(),
+      "underline" to underlineSpans.isNotEmpty(),
+      "strikethrough" to strikethroughSpans.isNotEmpty(),
+      "bullet" to bulletSpans.isNotEmpty(),
+      "numbered" to hasNumberedFormat
+    )
   }
 
   private fun saveUndoState() {

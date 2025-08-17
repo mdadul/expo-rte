@@ -6,13 +6,20 @@ export type ChangeEventPayload = {
   content: string;
 };
 
+export type SelectionChangeEventPayload = {
+  start: number;
+  end: number;
+};
+
 export type ExpoRTEModuleEvents = {
   onChange: (params: ChangeEventPayload) => void;
+  onSelectionChange: (params: SelectionChangeEventPayload) => void;
 };
 
 export type ExpoRTEViewProps = {
   content?: string;
   onChange?: (event: { nativeEvent: ChangeEventPayload }) => void;
+  onSelectionChange?: (event: { nativeEvent: SelectionChangeEventPayload }) => void;
   style?: StyleProp<ViewStyle>;
   placeholder?: string;
   editable?: boolean;

@@ -9,6 +9,7 @@ declare class ExpoRTEModule extends NativeModule<ExpoRTEModuleEvents> {
   formatSimple(type: FormatType): Promise<void>;
   undo(): Promise<void>;
   redo(): Promise<void>;
+  getCurrentFormats(): Promise<Record<string, boolean>>;
 }
 
 // This call loads the native module object from the JSI.

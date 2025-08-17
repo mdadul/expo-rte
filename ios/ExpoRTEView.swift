@@ -291,6 +291,80 @@ class ExpoRTEView: ExpoView {
       }
     }
   }
+  
+  func getCurrentFormats() -> [String: Bool] {
+    let selectedRange = textView.selectedRange
+    
+    // If no selection, return all false
+    if selectedRange.length == 0 {
+      return [
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "bullet": false,
+        "numbered": false
+      ]
+    }
+    
+    let attributedString = textView.attributedText
+    let range = NSRange(location: selectedRange.location, length: selectedRange.length)
+    
+    // Check for bold formatting
+    var boldFont: UIFont?
+    attributedString?.enumerateAttribute(.font, in: range, options: []) { value, range, stop in
+      if let font = value as? UIFont, font.fontDescriptor.symbolicTraits.contains(.traitBold) {
+        boldFont = font
+        stop.pointee = true
+      }
+    }
+    
+    // Check for italic formatting
+    var italicFont: UIFont?
+    attributedString?.enumerateAttribute(.font, in: range, options: []) { value, range, stop in
+      if let font = value as? UIFont, font.fontDescriptor.symbolicTraits.contains(.traitItalic) {
+        italicFont = font
+        stop.pointee = true
+      }
+    }
+    
+    // Check for underline formatting
+    var hasUnderline = false
+    attributedString?.enumerateAttribute(.underlineStyle, in: range, options: []) { value, range, stop in
+      if let underlineStyle = value as? Int, underlineStyle != 0 {
+        hasUnderline = true
+        stop.pointee = true
+      }
+    }
+    
+    // Check for strikethrough formatting
+    var hasStrikethrough = false
+    attributedString?.enumerateAttribute(.strikethroughStyle, in: range, options: []) { value, range, stop in
+      if let strikethroughStyle = value as? Int, strikethroughStyle != 0 {
+        hasStrikethrough = true
+        stop.pointee = true
+      }
+    }
+    
+    // Check for bullet formatting (simplified)
+    let selectedText = attributedString?.string ?? ""
+    let startIndex = selectedText.index(selectedText.startIndex, offsetBy: selectedRange.location)
+    let endIndex = selectedText.index(startIndex, offsetBy: selectedRange.length)
+    let substring = String(selectedText[startIndex..<endIndex])
+    let hasBullet = substring.contains("•")
+    
+    // Check for numbered formatting (simplified)
+    let hasNumbered = substring.range(of: #"^\d+\. "#, options: .regularExpression) != nil
+    
+    return [
+      "bold": boldFont != nil,
+      "italic": italicFont != nil,
+      "underline": hasUnderline,
+      "strikethrough": hasStrikethrough,
+      "bullet": hasBullet,
+      "numbered": hasNumbered
+    ]
+  }
 }
 
 extension ExpoRTEView: UITextViewDelegate {
@@ -307,6 +381,17 @@ extension ExpoRTEView: UITextViewDelegate {
     DispatchQueue.main.async {
       if let moduleInstance = ExpoRTEView.moduleInstance {
         moduleInstance.sendEvent("onChange", ["content": self.getContent()])
+      }
+    }
+  }
+  
+  func textViewDidChangeSelection(_ textView: UITextView) {
+    DispatchQueue.main.async {
+      if let moduleInstance = ExpoRTEView.moduleInstance {
+        moduleInstance.sendEvent("onSelectionChange", [
+          "start": textView.selectedRange.location,
+          "end": textView.selectedRange.location + textView.selectedRange.length
+        ])
       }
     }
   }

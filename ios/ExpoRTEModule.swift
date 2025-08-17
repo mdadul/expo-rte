@@ -4,7 +4,7 @@ public class ExpoRTEModule: Module {
   public func definition() -> ModuleDefinition {
     Name("ExpoRTE")
 
-    Events("onChange")
+    Events("onChange", "onSelectionChange")
 
     OnCreate {
       ExpoRTEView.moduleInstance = self
@@ -44,6 +44,18 @@ public class ExpoRTEModule: Module {
       ExpoRTEView.currentFocusedView?.redo()
     }
 
+    // Get current formatting state
+    AsyncFunction("getCurrentFormats") { () -> [String: Bool] in
+      return ExpoRTEView.currentFocusedView?.getCurrentFormats() ?? [
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "bullet": false,
+        "numbered": false
+      ]
+    }
+
     // Enables the module to be used as a native view
     View(ExpoRTEView.self) {
       // Content prop to set initial content
@@ -62,6 +74,9 @@ public class ExpoRTEModule: Module {
       Prop("editable") { (view: ExpoRTEView, editable: Bool) in
         view.setEditable(editable)
       }
+      
+      // Selection change event
+      Events("onSelectionChange")
     }
   }
 }

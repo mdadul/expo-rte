@@ -10,6 +10,7 @@ export interface RichTextEditorRef {
   format: (type: FormatType, value?: any) => Promise<void>;
   undo: () => Promise<void>;
   redo: () => Promise<void>;
+  updateFormats: () => Promise<void>;
 }
 
 export interface ToolbarButton {
@@ -70,6 +71,13 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
       return () => subscription?.remove();
     }, []);
 
+    // Update active formats when component mounts
+    useEffect(() => {
+      updateActiveFormats();
+    }, []);
+
+
+
     const isTablet = screenData.width >= 768;
     const isSmallScreen = screenData.width < 400;
 
@@ -85,18 +93,41 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
       },
       undo: () => ExpoRTEModule.undo(),
       redo: () => ExpoRTEModule.redo(),
+      getCurrentFormats: () => ExpoRTEModule.getCurrentFormats(),
+      updateFormats: () => updateActiveFormats(),
     }));
 
-    const handleFormat = (type: FormatType, value?: any) => {
-      if (type === 'undo') {
-        ExpoRTEModule.undo();
-      } else if (type === 'redo') {
-        ExpoRTEModule.redo();
-      } else if (value !== undefined && value !== null) {
-        ExpoRTEModule.format(type, value);
-      } else {
-        ExpoRTEModule.formatSimple(type);
+    const updateActiveFormats = async () => {
+      try {
+        const formats = await ExpoRTEModule.getCurrentFormats();
+        
+        const newActiveFormats = new Set<FormatType>();
+        
+        Object.entries(formats).forEach(([format, isActive]) => {
+          if (isActive && format !== 'undo' && format !== 'redo') {
+            newActiveFormats.add(format as FormatType);
+          }
+        });
+        
+        setActiveFormats(newActiveFormats);
+      } catch (error) {
+        console.error('Error getting current formats:', error);
       }
+    };
+
+    const handleFormat = async (type: FormatType, value?: any) => {
+      if (type === 'undo') {
+        await ExpoRTEModule.undo();
+      } else if (type === 'redo') {
+        await ExpoRTEModule.redo();
+      } else if (value !== undefined && value !== null) {
+        await ExpoRTEModule.format(type, value);
+      } else {
+        await ExpoRTEModule.formatSimple(type);
+      }
+      
+      // Update active formats after formatting
+      setTimeout(updateActiveFormats, 100);
     };
 
     const getDensityStyles = () => {
@@ -160,21 +191,10 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
 
       return (
         <TouchableOpacity
-          key={`${button.type}-${index}`}
+          key={`${button.type}-${index}-${isActive}`}
           style={buttonStyles}
           onPress={() => {
             handleFormat(button.type, button.value);
-            
-            // Toggle active state for visual feedback
-            const newActiveFormats = new Set(activeFormats);
-            if (['undo', 'redo'].includes(button.type)) {
-              // Don't toggle active state for action buttons
-            } else if (isActive) {
-              newActiveFormats.delete(button.type);
-            } else {
-              newActiveFormats.add(button.type);
-            }
-            setActiveFormats(newActiveFormats);
           }}
           accessibilityLabel={button.label || button.type}
           accessibilityRole="button"
@@ -307,6 +327,14 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
         {showToolbar && renderToolbar()}
         <ExpoRTEView
           style={styles.editor}
+          onSelectionChange={() => {
+            // Update active formats when selection changes - more immediate
+            updateActiveFormats();
+          }}
+          onChange={() => {
+            // Also update formats when content changes
+            setTimeout(updateActiveFormats, 100);
+          }}
           {...props}
         />
       </View>
@@ -373,6 +401,7 @@ const styles = StyleSheet.create({
   toolbarButtonActive: {
     backgroundColor: '#007AFF',
     borderColor: '#0056CC',
+    borderWidth: 2,
   },
   
   // Basic Button Text Styles
@@ -383,6 +412,7 @@ const styles = StyleSheet.create({
   },
   toolbarButtonTextActive: {
     color: '#ffffff',
+    fontWeight: 'bold',
   },
   toolbarButtonLabel: {
     fontSize: 10,
