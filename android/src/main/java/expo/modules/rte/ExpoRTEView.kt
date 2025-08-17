@@ -150,6 +150,13 @@ class ExpoRTEView(context: Context, appContext: AppContext) : ExpoView(context, 
               val url = value?.toString() ?: "http://example.com"
               applyLinkFormatting(spannable, start, end, url)
             }
+            "heading" -> {
+                if (value is Int) {
+                    applyHeadingFormatting(spannable, start, end, value)
+                } else if (value is Double) {
+                    applyHeadingFormatting(spannable, start, end, value.toInt())
+                }
+            }
           }
           // Keep selection after formatting
           editText.setSelection(start, end)
@@ -343,6 +350,20 @@ class ExpoRTEView(context: Context, appContext: AppContext) : ExpoView(context, 
     // Apply new link formatting
     val urlSpan = URLSpan(url)
     spannable.setSpan(urlSpan, start, end, Spannable.SPAN_EXCLUSIVE_INCLUSIVE)
+  }
+
+  private fun applyHeadingFormatting(spannable: Editable, start: Int, end: Int, level: Int) {
+    val sizeSpan = when (level) {
+        1 -> RelativeSizeSpan(2.0f)
+        2 -> RelativeSizeSpan(1.5f)
+        3 -> RelativeSizeSpan(1.25f)
+        4 -> RelativeSizeSpan(1.1f)
+        5 -> RelativeSizeSpan(1.0f)
+        6 -> RelativeSizeSpan(0.9f)
+        else -> RelativeSizeSpan(1.0f)
+    }
+    spannable.setSpan(sizeSpan, start, end, Spannable.SPAN_EXCLUSIVE_INCLUSIVE)
+    spannable.setSpan(StyleSpan(Typeface.BOLD), start, end, Spannable.SPAN_EXCLUSIVE_INCLUSIVE)
   }
 
   private fun insertFormattedText(spannable: Editable, position: Int, type: String, value: Any?) {

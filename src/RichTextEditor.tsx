@@ -50,6 +50,7 @@ const defaultToolbarButtons: ToolbarButton[] = [
   { type: 'italic', icon: 'I', label: 'Italic', group: 'format' },
   { type: 'underline', icon: 'U', label: 'Underline', group: 'format' },
   { type: 'strikethrough', icon: 'S', label: 'Strike', group: 'format' },
+  { type: 'heading', icon: 'H', label: 'Heading', group: 'format' },
   { type: 'bullet', icon: '•', label: 'Bullet', group: 'list' },
   { type: 'numbered', icon: '1.', label: 'Number', group: 'list' },
   { type: 'undo', icon: '↶', label: 'Undo', group: 'action' },
@@ -60,6 +61,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
   ({ showToolbar = true, toolbarConfig, customToolbar, style, ...props }, ref) => {
     const [screenData, setScreenData] = useState(Dimensions.get('window'));
     const [activeFormats, setActiveFormats] = useState<Set<FormatType>>(new Set());
+    const [showHeadingPicker, setShowHeadingPicker] = useState(false);
 
     useEffect(() => {
       const onChange = (result: { window: any }) => {
@@ -88,6 +90,10 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
     }));
 
     const handleFormat = (type: FormatType, value?: any) => {
+      if (type === 'heading') {
+        setShowHeadingPicker(!showHeadingPicker);
+        return;
+      }
       if (type === 'undo') {
         ExpoRTEModule.undo();
       } else if (type === 'redo') {
@@ -302,9 +308,33 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
       );
     };
 
+    const handleHeadingSelect = (level: number) => {
+      ExpoRTEModule.format('heading', level);
+      setShowHeadingPicker(false);
+    };
+
+    const renderHeadingPicker = () => {
+      if (!showHeadingPicker) return null;
+
+      return (
+        <View style={styles.headingPickerContainer}>
+          {[1, 2, 3, 4, 5, 6].map((level) => (
+            <TouchableOpacity
+              key={level}
+              style={styles.headingPickerButton}
+              onPress={() => handleHeadingSelect(level)}
+            >
+              <Text style={styles.headingPickerButtonText}>H{level}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      );
+    };
+
     return (
       <View style={[styles.container, style]}>
         {showToolbar && renderToolbar()}
+        {renderHeadingPicker()}
         <ExpoRTEView
           style={styles.editor}
           {...props}
@@ -397,6 +427,29 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 200,
     backgroundColor: '#ffffff',
+  },
+  headingPickerContainer: {
+    position: 'absolute',
+    top: 60, // Adjust as needed
+    left: 120, // Adjust as needed
+    backgroundColor: 'white',
+    borderRadius: 8,
+    padding: 8,
+    flexDirection: 'row',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    zIndex: 1000,
+  },
+  headingPickerButton: {
+    padding: 8,
+    marginHorizontal: 4,
+  },
+  headingPickerButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 
