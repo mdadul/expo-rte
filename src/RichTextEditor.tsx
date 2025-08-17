@@ -50,6 +50,8 @@ const defaultToolbarButtons: ToolbarButton[] = [
   { type: 'italic', icon: 'I', label: 'Italic', group: 'format' },
   { type: 'underline', icon: 'U', label: 'Underline', group: 'format' },
   { type: 'strikethrough', icon: 'S', label: 'Strike', group: 'format' },
+  { type: 'foreground', icon: 'FC', label: 'Forground', group: 'format', value: '#FF0000' },
+  { type: 'background', icon: 'BC', label: 'Background', group: 'format', value: '#FFFF00' },
   { type: 'bullet', icon: '•', label: 'Bullet', group: 'list' },
   { type: 'numbered', icon: '1.', label: 'Number', group: 'list' },
   { type: 'undo', icon: '↶', label: 'Undo', group: 'action' },

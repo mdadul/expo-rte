@@ -108,6 +108,14 @@ class ExpoRTEView: ExpoView {
           mutableString.addAttribute(.link, value: url, range: selectedRange)
           mutableString.addAttribute(.foregroundColor, value: UIColor.systemBlue, range: selectedRange)
         }
+      case "foreground":
+          if let hexColor = value {
+              mutableString.addAttribute(.foregroundColor, value: self.colorFromHex(hexColor) ?? .black, range: selectedRange)
+          }
+      case "background":
+          if let hexColor = value {
+              mutableString.addAttribute(.backgroundColor, value: self.colorFromHex(hexColor) ?? .white, range: selectedRange)
+          }
       default:
         break
       }
@@ -117,6 +125,21 @@ class ExpoRTEView: ExpoView {
       self.textView.attributedText = mutableString
       self.textView.selectedRange = savedRange
     }
+  }
+
+  private func colorFromHex(_ hex: String) -> UIColor? {
+      var hexSanitized = hex.trimmingCharacters(in: .whitespacesAndNewlines)
+      hexSanitized = hexSanitized.replacingOccurrences(of: "#", with: "")
+
+      var rgb: UInt64 = 0
+
+      Scanner(string: hexSanitized).scanHexInt64(&rgb)
+
+      let red = CGFloat((rgb & 0xFF0000) >> 16) / 255.0
+      let green = CGFloat((rgb & 0x00FF00) >> 8) / 255.0
+      let blue = CGFloat(rgb & 0x0000FF) / 255.0
+
+      return UIColor(red: red, green: green, blue: blue, alpha: 1.0)
   }
   
   // Image functionality removed for stability
