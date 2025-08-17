@@ -108,6 +108,21 @@ class ExpoRTEView: ExpoView {
           mutableString.addAttribute(.link, value: url, range: selectedRange)
           mutableString.addAttribute(.foregroundColor, value: UIColor.systemBlue, range: selectedRange)
         }
+      case "heading":
+        if let levelString = value, let level = Int(levelString) {
+            let fontSize: CGFloat
+            switch level {
+            case 1: fontSize = 32
+            case 2: fontSize = 24
+            case 3: fontSize = 20
+            case 4: fontSize = 18
+            case 5: fontSize = 16
+            case 6: fontSize = 14
+            default: fontSize = currentFont.pointSize
+            }
+            let boldFont = UIFont.boldSystemFont(ofSize: fontSize)
+            mutableString.addAttribute(.font, value: boldFont, range: selectedRange)
+        }
       default:
         break
       }
