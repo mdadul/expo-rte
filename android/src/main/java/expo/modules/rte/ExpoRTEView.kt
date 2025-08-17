@@ -150,6 +150,17 @@ class ExpoRTEView(context: Context, appContext: AppContext) : ExpoView(context, 
               val url = value?.toString() ?: "http://example.com"
               applyLinkFormatting(spannable, start, end, url)
             }
+            "foreground" -> {
+                val color = android.graphics.Color.parseColor(value.toString())
+                val colorSpan = ForegroundColorSpan(color)
+                spannable.setSpan(colorSpan, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            }
+
+            "background" -> {
+                val color = android.graphics.Color.parseColor(value.toString())
+                val colorSpan = BackgroundColorSpan(color)
+                spannable.setSpan(colorSpan, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            }
           }
           // Keep selection after formatting
           editText.setSelection(start, end)
