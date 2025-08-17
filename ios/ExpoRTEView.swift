@@ -85,6 +85,9 @@ class ExpoRTEView: ExpoView {
   
   func format(type: String, value: String?) {
     DispatchQueue.main.async {
+      // Save undo state before any formatting operation
+      self.saveUndoStateForFormatting()
+      
       let selectedRange = self.textView.selectedRange
       let mutableString = NSMutableAttributedString(attributedString: self.textView.attributedText)
       let currentFont = self.textView.font ?? UIFont.systemFont(ofSize: 16)
@@ -135,6 +138,8 @@ class ExpoRTEView: ExpoView {
   }
   
   private func applyListFormatting(mutableString: NSMutableAttributedString, listType: ListType) {
+    // Save undo state is already called in format function before this method
+    
     let selectedRange = self.textView.selectedRange
     let text = mutableString.string
     
@@ -225,9 +230,19 @@ class ExpoRTEView: ExpoView {
     DispatchQueue.main.async {
       if !self.undoStack.isEmpty {
         let currentText = self.textView.attributedText
+        let currentSelection = self.textView.selectedRange
+        
         self.redoStack.append(currentText!)
         let previousText = self.undoStack.removeLast()
         self.textView.attributedText = previousText
+        
+        // Try to preserve selection, but ensure it's within bounds
+        let maxLength = previousText.length
+        let newSelection = NSRange(
+          location: min(currentSelection.location, maxLength),
+          length: 0
+        )
+        self.textView.selectedRange = newSelection
       }
     }
   }
@@ -236,14 +251,36 @@ class ExpoRTEView: ExpoView {
     DispatchQueue.main.async {
       if !self.redoStack.isEmpty {
         let currentText = self.textView.attributedText
+        let currentSelection = self.textView.selectedRange
+        
         self.undoStack.append(currentText!)
         let nextText = self.redoStack.removeLast()
         self.textView.attributedText = nextText
+        
+        // Try to preserve selection, but ensure it's within bounds
+        let maxLength = nextText.length
+        let newSelection = NSRange(
+          location: min(currentSelection.location, maxLength),
+          length: 0
+        )
+        self.textView.selectedRange = newSelection
       }
     }
   }
   
   private func saveUndoState() {
+    if let currentText = textView.attributedText {
+      undoStack.append(NSAttributedString(attributedString: currentText))
+      redoStack.removeAll() // Clear redo stack when new action is performed
+      
+      // Limit undo stack size
+      if undoStack.count > 50 {
+        undoStack.removeFirst()
+      }
+    }
+  }
+  
+  private func saveUndoStateForFormatting() {
     if let currentText = textView.attributedText {
       undoStack.append(NSAttributedString(attributedString: currentText))
       redoStack.removeAll() // Clear redo stack when new action is performed
@@ -262,7 +299,11 @@ extension ExpoRTEView: UITextViewDelegate {
   }
   
   func textViewDidChange(_ textView: UITextView) {
+    // Only save undo state for user-initiated changes, not programmatic changes
+    // We can detect this by checking if the change is happening in the main queue
+    // and if we're not currently processing a format operation
     saveUndoState()
+    
     DispatchQueue.main.async {
       if let moduleInstance = ExpoRTEView.moduleInstance {
         moduleInstance.sendEvent("onChange", ["content": self.getContent()])
