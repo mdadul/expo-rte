@@ -108,6 +108,21 @@ class ExpoRTEView: ExpoView {
           mutableString.addAttribute(.link, value: url, range: selectedRange)
           mutableString.addAttribute(.foregroundColor, value: UIColor.systemBlue, range: selectedRange)
         }
+      case "left", "center", "right", "justify":
+        let paragraphStyle = NSMutableParagraphStyle()
+        switch type {
+        case "left":
+          paragraphStyle.alignment = .left
+        case "center":
+          paragraphStyle.alignment = .center
+        case "right":
+          paragraphStyle.alignment = .right
+        case "justify":
+          paragraphStyle.alignment = .justified
+        default:
+          break
+        }
+        mutableString.addAttribute(.paragraphStyle, value: paragraphStyle, range: selectedRange)
       default:
         break
       }

@@ -2,6 +2,7 @@ package expo.modules.rte
 
 import android.content.Context
 import android.graphics.Typeface
+import android.graphics.text.LineBreaker
 import android.text.*
 import android.text.method.LinkMovementMethod
 import android.text.style.*
@@ -149,6 +150,9 @@ class ExpoRTEView(context: Context, appContext: AppContext) : ExpoView(context, 
             "link" -> {
               val url = value?.toString() ?: "http://example.com"
               applyLinkFormatting(spannable, start, end, url)
+            }
+            "left", "center", "right", "justify" -> {
+              applyAlignmentFormatting(spannable, start, end, type)
             }
           }
           // Keep selection after formatting
@@ -343,6 +347,29 @@ class ExpoRTEView(context: Context, appContext: AppContext) : ExpoView(context, 
     // Apply new link formatting
     val urlSpan = URLSpan(url)
     spannable.setSpan(urlSpan, start, end, Spannable.SPAN_EXCLUSIVE_INCLUSIVE)
+  }
+
+  private fun applyAlignmentFormatting(spannable: Editable, start: Int, end: Int, alignment: String) {
+    // Justify alignment is handled differently as it's a property of the EditText
+    if (alignment == "justify") {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            editText.justificationMode = android.graphics.text.LineBreaker.JUSTIFICATION_MODE_INTER_WORD
+        }
+        return // No span needed for justify
+    }
+
+    val alignmentSpan = when (alignment) {
+      "left" -> AlignmentSpan.Standard(Layout.Alignment.ALIGN_NORMAL)
+      "center" -> AlignmentSpan.Standard(Layout.Alignment.ALIGN_CENTER)
+      "right" -> AlignmentSpan.Standard(Layout.Alignment.ALIGN_OPPOSITE)
+      else -> return
+    }
+
+    // Remove any existing alignment spans in the selection
+    val existingSpans = spannable.getSpans(start, end, AlignmentSpan::class.java)
+    existingSpans.forEach { spannable.removeSpan(it) }
+
+    spannable.setSpan(alignmentSpan, start, end, Spannable.SPAN_EXCLUSIVE_INCLUSIVE)
   }
 
   private fun insertFormattedText(spannable: Editable, position: Int, type: String, value: Any?) {
