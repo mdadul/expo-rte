@@ -19,16 +19,30 @@ class ExpoRTEView(context: Context, appContext: AppContext) : ExpoView(context, 
     var moduleInstance: ExpoRTEModule? = null
   }
 
-  private lateinit var editText: EditText
+  private lateinit var editText: CustomEditText
   private val undoStack = Stack<CharSequence>()
   private val redoStack = Stack<CharSequence>()
+  private var isUndoOrRedoInProgress = false
+  private var lastSavedHash = 0
+  
+  // Custom EditText to detect selection changes
+  private inner class CustomEditText(context: Context) : EditText(context) {
+    override fun onSelectionChanged(selStart: Int, selEnd: Int) {
+      super.onSelectionChanged(selStart, selEnd)
+      // Send selection change event
+      moduleInstance?.sendEvent("onSelectionChange", bundleOf(
+        "start" to selStart,
+        "end" to selEnd
+      ))
+    }
+  }
 
   init {
     setupEditText()
   }
   
   private fun setupEditText() {
-    editText = EditText(context).apply {
+    editText = CustomEditText(context).apply {
       layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
       movementMethod = LinkMovementMethod.getInstance()
       inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
@@ -38,16 +52,31 @@ class ExpoRTEView(context: Context, appContext: AppContext) : ExpoView(context, 
       val initialText = SpannableStringBuilder("")
       setText(initialText, TextView.BufferType.EDITABLE)
       
+      // Initialize undo/redo stacks
+      undoStack.clear()
+      redoStack.clear()
+      
+      // Add initial empty state to undo stack
+      undoStack.push(SpannableStringBuilder(initialText))
+      lastSavedHash = initialText.toString().hashCode()
+      
       addTextChangedListener(object : TextWatcher {
+        private var previousText: CharSequence? = null
+        
         override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
-          // Save state for undo
-          s?.let { saveUndoState(it) }
+          // Store the text before changes for comparison
+          previousText = s?.toString()
         }
 
         override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
 
         override fun afterTextChanged(s: Editable?) {
           post {
+            // Only save undo state if text actually changed and not during undo/redo
+            if (!isUndoOrRedoInProgress && s != null && previousText != null && s.toString() != previousText) {
+              saveUndoState()
+            }
+            
             moduleInstance?.sendEvent("onChange", bundleOf("content" to getHtmlContent()))
           }
         }
@@ -71,20 +100,36 @@ class ExpoRTEView(context: Context, appContext: AppContext) : ExpoView(context, 
   fun setContent(content: String) {
     post {
       try {
+        // Flag to prevent adding to undo stack during content setting
+        isUndoOrRedoInProgress = true
+        
         val spanned = if (content.contains("<") && content.contains(">")) {
           // Handle HTML content with better parsing
           Html.fromHtml(content, Html.FROM_HTML_MODE_LEGACY, null, createTagHandler())
         } else {
           SpannableString(content)
         }
+        
         // Always use EDITABLE buffer type to ensure spans work properly
         val editableText = SpannableStringBuilder(spanned)
         editText.setText(editableText, TextView.BufferType.EDITABLE)
+        
+        // Reset undo/redo stacks when content is explicitly set
+        undoStack.clear()
+        redoStack.clear()
+        
+        // Save initial state to undo stack
+        undoStack.push(SpannableStringBuilder(editableText))
+        lastSavedHash = editableText.toString().hashCode()
+        
+        android.util.Log.d("ExpoRTEView", "Content set and undo stack initialized")
       } catch (e: Exception) {
         android.util.Log.e("ExpoRTEView", "Error setting content: ${e.message}")
         // Fallback to plain text with proper buffer type
         val fallbackText = SpannableStringBuilder(content)
         editText.setText(fallbackText, TextView.BufferType.EDITABLE)
+      } finally {
+        isUndoOrRedoInProgress = false
       }
     }
   }
@@ -125,8 +170,8 @@ class ExpoRTEView(context: Context, appContext: AppContext) : ExpoView(context, 
         
         android.util.Log.d("ExpoRTEView", "Formatting: type=$type, start=$start, end=$end, value=$value")
         
-        // Save state for undo
-        saveUndoState(editText.text)
+        // Save state for undo before making changes
+        saveUndoStateForFormatting()
         
         // Ensure we have a proper Editable for span operations
         val editable = editText.text
@@ -381,11 +426,39 @@ class ExpoRTEView(context: Context, appContext: AppContext) : ExpoView(context, 
   fun undo() {
     post {
       if (undoStack.isNotEmpty()) {
-        val currentText = editText.text
-        redoStack.push(currentText)
-        val previousText = undoStack.pop()
-        editText.setText(previousText)
-        editText.setSelection(previousText.length)
+        try {
+          isUndoOrRedoInProgress = true
+          
+          // Save current text to redo stack
+          val currentText = editText.text
+          val currentSelection = editText.selectionStart
+          
+          // Don't undo if we only have one state left (initial state)
+          if (undoStack.size == 1) {
+            android.util.Log.d("ExpoRTEView", "Only initial state left, nothing to undo")
+            return@post
+          }
+          
+          redoStack.push(SpannableStringBuilder(currentText))
+          
+          // Get previous text from undo stack
+          val previousText = undoStack.pop()
+          editText.setText(previousText)
+          
+          // Try to preserve selection, but ensure it's within bounds
+          val maxLength = previousText.length
+          val newSelection = Math.min(currentSelection, maxLength)
+          editText.setSelection(newSelection)
+          
+          // Update hash code to prevent duplicate states
+          lastSavedHash = previousText.toString().hashCode()
+          
+          android.util.Log.d("ExpoRTEView", "Undo performed. Remaining undo states: ${undoStack.size}")
+        } finally {
+          isUndoOrRedoInProgress = false
+        }
+      } else {
+        android.util.Log.d("ExpoRTEView", "No undo states available")
       }
     }
   }
@@ -393,22 +466,158 @@ class ExpoRTEView(context: Context, appContext: AppContext) : ExpoView(context, 
   fun redo() {
     post {
       if (redoStack.isNotEmpty()) {
-        val currentText = editText.text
-        undoStack.push(currentText)
-        val nextText = redoStack.pop()
-        editText.setText(nextText)
-        editText.setSelection(nextText.length)
+        try {
+          isUndoOrRedoInProgress = true
+          
+          // Save current text to undo stack
+          val currentText = editText.text
+          val currentSelection = editText.selectionStart
+          
+          undoStack.push(SpannableStringBuilder(currentText))
+          
+          // Get next text from redo stack
+          val nextText = redoStack.pop()
+          editText.setText(nextText)
+          
+          // Try to preserve selection, but ensure it's within bounds
+          val maxLength = nextText.length
+          val newSelection = Math.min(currentSelection, maxLength)
+          editText.setSelection(newSelection)
+          
+          // Update hash code to prevent duplicate states
+          lastSavedHash = nextText.toString().hashCode()
+          
+          android.util.Log.d("ExpoRTEView", "Redo performed. Remaining redo states: ${redoStack.size}")
+        } finally {
+          isUndoOrRedoInProgress = false
+        }
+      } else {
+        android.util.Log.d("ExpoRTEView", "No redo states available")
       }
     }
   }
 
-  private fun saveUndoState(text: CharSequence) {
-    undoStack.push(SpannableStringBuilder(text))
-    redoStack.clear() // Clear redo stack when new action is performed
+  fun getCurrentFormats(): Map<String, Boolean> {
+    val start = editText.selectionStart
+    val end = editText.selectionEnd
     
-    // Limit undo stack size
-    if (undoStack.size > 50) {
-      undoStack.removeAt(0)
+    // If no selection, return all false
+    if (start == end || start < 0 || end < 0) {
+      return mapOf(
+        "bold" to false,
+        "italic" to false,
+        "underline" to false,
+        "strikethrough" to false,
+        "bullet" to false,
+        "numbered" to false
+      )
+    }
+    
+    val spannable = editText.text as? Spanned ?: return mapOf(
+      "bold" to false,
+      "italic" to false,
+      "underline" to false,
+      "strikethrough" to false,
+      "bullet" to false,
+      "numbered" to false
+    )
+    
+    // Check for bold formatting
+    val boldSpans = spannable.getSpans(start, end, StyleSpan::class.java)
+      .filter { span ->
+        val spanStart = spannable.getSpanStart(span)
+        val spanEnd = spannable.getSpanEnd(span)
+        (spanStart < end && spanEnd > start) && 
+        (span.style == Typeface.BOLD || span.style == Typeface.BOLD_ITALIC)
+      }
+    
+    // Check for italic formatting
+    val italicSpans = spannable.getSpans(start, end, StyleSpan::class.java)
+      .filter { span ->
+        val spanStart = spannable.getSpanStart(span)
+        val spanEnd = spannable.getSpanEnd(span)
+        (spanStart < end && spanEnd > start) && 
+        (span.style == Typeface.ITALIC || span.style == Typeface.BOLD_ITALIC)
+      }
+    
+    // Check for underline formatting
+    val underlineSpans = spannable.getSpans(start, end, UnderlineSpan::class.java)
+      .filter { span ->
+        val spanStart = spannable.getSpanStart(span)
+        val spanEnd = spannable.getSpanEnd(span)
+        (spanStart < end && spanEnd > start)
+      }
+    
+    // Check for strikethrough formatting
+    val strikethroughSpans = spannable.getSpans(start, end, StrikethroughSpan::class.java)
+      .filter { span ->
+        val spanStart = spannable.getSpanStart(span)
+        val spanEnd = spannable.getSpanEnd(span)
+        (spanStart < end && spanEnd > start)
+      }
+    
+    // Check for bullet formatting
+    val bulletSpans = spannable.getSpans(start, end, BulletSpan::class.java)
+      .filter { span ->
+        val spanStart = spannable.getSpanStart(span)
+        val spanEnd = spannable.getSpanEnd(span)
+        (spanStart < end && spanEnd > start)
+      }
+    
+    // Check for numbered formatting (simplified check)
+    val lineText = spannable.subSequence(start, end).toString()
+    val hasNumberedFormat = Regex("^\\d+\\. ").containsMatchIn(lineText)
+    
+    return mapOf(
+      "bold" to boldSpans.isNotEmpty(),
+      "italic" to italicSpans.isNotEmpty(),
+      "underline" to underlineSpans.isNotEmpty(),
+      "strikethrough" to strikethroughSpans.isNotEmpty(),
+      "bullet" to bulletSpans.isNotEmpty(),
+      "numbered" to hasNumberedFormat
+    )
+  }
+
+  private fun saveUndoState() {
+    if (isUndoOrRedoInProgress) return
+    
+    val currentText = editText.text
+    if (currentText != null) {
+      // Don't save duplicate states
+      val currentHash = currentText.toString().hashCode()
+      if (currentHash == lastSavedHash && undoStack.isNotEmpty()) {
+        return
+      }
+      
+      undoStack.push(SpannableStringBuilder(currentText))
+      redoStack.clear() // Clear redo stack when new action is performed
+      lastSavedHash = currentHash
+      
+      // Limit undo stack size
+      if (undoStack.size > 50) {
+        undoStack.removeElementAt(0)
+      }
+      
+      android.util.Log.d("ExpoRTEView", "Saved undo state. Stack size: ${undoStack.size}")
+    }
+  }
+  
+  private fun saveUndoStateForFormatting() {
+    if (isUndoOrRedoInProgress) return
+    
+    val currentText = editText.text
+    if (currentText != null) {
+      // Always save state before formatting, regardless of duplication
+      undoStack.push(SpannableStringBuilder(currentText))
+      redoStack.clear() // Clear redo stack when new action is performed
+      lastSavedHash = currentText.toString().hashCode()
+      
+      // Limit undo stack size
+      if (undoStack.size > 50) {
+        undoStack.removeElementAt(0)
+      }
+      
+      android.util.Log.d("ExpoRTEView", "Saved undo state for formatting. Stack size: ${undoStack.size}")
     }
   }
 

@@ -19,7 +19,6 @@
 
 ## ✨ Features
 - 🛠️ **Highly Customizable** - Adaptive toolbar with multiple density options
-- ⚡ **Performance Optimized** - Smooth animations and efficient rendering
 - 🌍 **Cross-Platform** - Works seamlessly on iOS and Android
 - ♿ **Accessible** - WCAG compliant with proper ARIA labels
 - 🎯 **Multiple Toolbar Styles** - Basic, custom styled, and responsive adaptive toolbars
@@ -439,11 +438,6 @@ npm run build
 ## 📄 License
 
 MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 👥 Credits
-
-Created by [Emdadul Islam](https://github.com/mdadul)
-
 
 <div align="center">
 

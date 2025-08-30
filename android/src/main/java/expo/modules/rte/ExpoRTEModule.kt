@@ -11,7 +11,7 @@ class ExpoRTEModule : Module() {
   override fun definition() = ModuleDefinition {
     Name("ExpoRTE")
 
-    Events("onChange")
+    Events("onChange", "onSelectionChange")
 
     // Set content in the current focused RTE view
     AsyncFunction("setContent") { content: String ->
@@ -47,6 +47,18 @@ class ExpoRTEModule : Module() {
       getCurrentRTEView()?.redo()
     }
 
+    // Get current formatting state
+    AsyncFunction("getCurrentFormats") { ->
+      getCurrentRTEView()?.getCurrentFormats() ?: mapOf(
+        "bold" to false,
+        "italic" to false,
+        "underline" to false,
+        "strikethrough" to false,
+        "bullet" to false,
+        "numbered" to false
+      )
+    }
+
     // Enables the module to be used as a native view
     View(ExpoRTEView::class) {
       // Content prop to set initial content
@@ -63,6 +75,9 @@ class ExpoRTEModule : Module() {
       Prop("editable") { view: ExpoRTEView, editable: Boolean ->
         view.setEditable(editable)
       }
+      
+      // Selection change event
+      Events("onSelectionChange")
     }
   }
 
