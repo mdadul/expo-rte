@@ -5,7 +5,7 @@ import { SafeAreaView, ScrollView, Text, View, StyleSheet, StatusBar, Platform }
 
 
 export default function App() {
-  const [content, setContent] = useState('<p>Welcome to the <strong>Rich Text Editor</strong>!</p><p>Try selecting text and using the formatting buttons above.</p>');
+  const [content, setContent] = useState('<p>Welcome to the <strong>Rich Text Editor</strong>!</p><p>Try selecting text and using the formatting buttons above.</p><p>✨ <em>New:</em> Click the table button (⊞) to insert tables!</p>');
   const rteRef = useRef<RichTextEditorRef>(null);
 
   const handleContentChange = ({ nativeEvent }: { nativeEvent: { content: string } }) => {
@@ -33,6 +33,8 @@ export default function App() {
 Try formatting your text:
 • Select text and use bold/italic
 • Create bullet lists  
+• Insert tables with the ⊞ button
+• Add/remove table rows with +R/-R buttons
 • Add links and more!"
               onChange={handleContentChange}
               style={styles.editor}
