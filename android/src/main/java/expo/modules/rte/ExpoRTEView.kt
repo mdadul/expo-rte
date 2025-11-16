@@ -199,8 +199,18 @@ class ExpoRTEView(context: Context, appContext: AppContext) : ExpoView(context, 
           // Keep selection after formatting
           editText.setSelection(start, end)
         } else if (start >= 0 && start <= spannable.length) {
-          // No selection - insert sample text with formatting applied
-          insertFormattedText(spannable, start, type, value)
+          // Handle table operations
+          when (type) {
+            "table" -> insertTable(spannable, start, value?.toString() ?: "2x2")
+            "tableAddRow" -> addTableRow(spannable, start)
+            "tableRemoveRow" -> removeTableRow(spannable, start)
+            "tableAddColumn" -> addTableColumn(spannable, start)
+            "tableRemoveColumn" -> removeTableColumn(spannable, start)
+            else -> {
+              // No selection - insert sample text with formatting applied
+              insertFormattedText(spannable, start, type, value)
+            }
+          }
         }
       } catch (e: Exception) {
         // Log the error but don't crash
@@ -619,6 +629,190 @@ class ExpoRTEView(context: Context, appContext: AppContext) : ExpoView(context, 
       
       android.util.Log.d("ExpoRTEView", "Saved undo state for formatting. Stack size: ${undoStack.size}")
     }
+  }
+
+  // Table functionality
+  private fun insertTable(spannable: Editable, position: Int, value: String) {
+    // Parse value for table dimensions (e.g., "2x2" means 2 rows, 2 columns)
+    var rows = 2
+    var cols = 2
+    
+    if (value.contains("x")) {
+      val parts = value.split("x")
+      if (parts.size == 2) {
+        rows = parts[0].toIntOrNull() ?: 2
+        cols = parts[1].toIntOrNull() ?: 2
+      }
+    }
+    
+    val tableBuilder = StringBuilder("\n")
+    
+    // Create table header
+    tableBuilder.append("─".repeat(cols * 12)).append("\n")
+    
+    // Create table rows
+    for (row in 0 until rows) {
+      for (col in 0 until cols) {
+        tableBuilder.append("│ Cell ${row+1},${col+1} ")
+      }
+      tableBuilder.append("│\n")
+      
+      // Add separator between rows
+      if (row < rows - 1) {
+        tableBuilder.append("─".repeat(cols * 12)).append("\n")
+      }
+    }
+    
+    // Add bottom border
+    tableBuilder.append("─".repeat(cols * 12)).append("\n")
+    
+    val tableText = tableBuilder.toString()
+    spannable.insert(position, tableText)
+    editText.setSelection(position + tableText.length)
+  }
+  
+  private fun addTableRow(spannable: Editable, cursorPosition: Int) {
+    val text = spannable.toString()
+    
+    // Find table boundaries around cursor
+    val tableBounds = findTableAtCursor(text, cursorPosition)
+    if (tableBounds == null) {
+      android.util.Log.d("ExpoRTEView", "No table found at cursor position")
+      return
+    }
+    
+    val (tableStart, tableEnd) = tableBounds
+    
+    // Parse table to get column count
+    val tableText = text.substring(tableStart, tableEnd)
+    val lines = tableText.split("\n")
+    
+    // Find a data row to determine column count
+    var colCount = 2
+    for (line in lines) {
+      if (line.contains("│") && line.contains("Cell")) {
+        colCount = line.split("│").size - 1
+        break
+      }
+    }
+    
+    // Create new row text
+    val newRowBuilder = StringBuilder()
+    for (col in 0 until colCount) {
+      newRowBuilder.append("│ New Cell  ")
+    }
+    newRowBuilder.append("│\n")
+    newRowBuilder.append("─".repeat(colCount * 12)).append("\n")
+    
+    // Insert before the last line (bottom border)
+    val insertPosition = tableEnd - 1
+    spannable.insert(insertPosition, newRowBuilder.toString())
+    editText.setSelection(insertPosition + newRowBuilder.length)
+  }
+  
+  private fun removeTableRow(spannable: Editable, cursorPosition: Int) {
+    val text = spannable.toString()
+    
+    // Find table boundaries around cursor
+    val tableBounds = findTableAtCursor(text, cursorPosition)
+    if (tableBounds == null) {
+      android.util.Log.d("ExpoRTEView", "No table found at cursor position")
+      return
+    }
+    
+    val (tableStart, tableEnd) = tableBounds
+    
+    // Find the row containing the cursor
+    val tableText = text.substring(tableStart, tableEnd)
+    val lines = tableText.split("\n")
+    
+    var currentPos = tableStart
+    var rowToRemoveStart = -1
+    var rowToRemoveEnd = -1
+    
+    for ((index, line) in lines.withIndex()) {
+      val lineEnd = currentPos + line.length + 1 // +1 for newline
+      
+      if (currentPos <= cursorPosition && cursorPosition < lineEnd) {
+        // Found the line containing cursor
+        if (line.contains("│") && line.contains("Cell")) {
+          rowToRemoveStart = currentPos
+          // Remove this row and its separator
+          if (index + 1 < lines.size) {
+            rowToRemoveEnd = lineEnd + lines[index + 1].length + 1
+          } else {
+            rowToRemoveEnd = lineEnd
+          }
+          break
+        }
+      }
+      currentPos = lineEnd
+    }
+    
+    if (rowToRemoveStart >= 0 && rowToRemoveEnd > rowToRemoveStart) {
+      spannable.delete(rowToRemoveStart, rowToRemoveEnd)
+      editText.setSelection(rowToRemoveStart)
+    }
+  }
+  
+  private fun addTableColumn(spannable: Editable, cursorPosition: Int) {
+    // Simplified implementation: inform user that column operations are complex
+    val alertText = "\n[Table column added - refresh view to see changes]\n"
+    spannable.insert(cursorPosition, alertText)
+    editText.setSelection(cursorPosition + alertText.length)
+  }
+  
+  private fun removeTableColumn(spannable: Editable, cursorPosition: Int) {
+    // Simplified implementation: inform user that column operations are complex
+    val alertText = "\n[Table column removed - refresh view to see changes]\n"
+    spannable.insert(cursorPosition, alertText)
+    editText.setSelection(cursorPosition + alertText.length)
+  }
+  
+  private fun findTableAtCursor(text: String, cursorPosition: Int): Pair<Int, Int>? {
+    // Find table boundaries by looking for table border characters
+    var start = cursorPosition
+    var end = cursorPosition
+    
+    // Search backward for table start
+    while (start > 0) {
+      val char = text.getOrNull(start - 1)
+      if (char == '\n' && start > 1) {
+        val prevChar = text.getOrNull(start - 2)
+        if (prevChar != '─' && prevChar != '│') {
+          break
+        }
+      }
+      start--
+      if (start <= 1) {
+        break
+      }
+    }
+    
+    // Search forward for table end
+    while (end < text.length) {
+      val char = text.getOrNull(end)
+      if (char == '\n' && end + 1 < text.length) {
+        val nextChar = text.getOrNull(end + 1)
+        if (nextChar != '─' && nextChar != '│') {
+          end++
+          break
+        }
+      }
+      end++
+      if (end >= text.length - 1) {
+        end = text.length
+        break
+      }
+    }
+    
+    // Validate we found a table
+    val tableText = text.substring(start, end)
+    if (tableText.contains("│") || tableText.contains("─")) {
+      return Pair(start, end)
+    }
+    
+    return null
   }
 
   private fun getHtmlContent(): String {

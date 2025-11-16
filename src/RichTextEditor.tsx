@@ -18,7 +18,7 @@ export interface ToolbarButton {
   icon: string | ReactNode;
   label?: string;
   value?: any;
-  group?: 'format' | 'list' | 'action' | 'insert';
+  group?: 'format' | 'list' | 'action' | 'insert' | 'table';
 }
 
 export interface ToolbarConfig {
@@ -53,6 +53,9 @@ const defaultToolbarButtons: ToolbarButton[] = [
   { type: 'strikethrough', icon: 'S', label: 'Strike', group: 'format' },
   { type: 'bullet', icon: '•', label: 'Bullet', group: 'list' },
   { type: 'numbered', icon: '1.', label: 'Number', group: 'list' },
+  { type: 'table', icon: '⊞', label: 'Table', group: 'table', value: '2x2' },
+  { type: 'tableAddRow', icon: '+R', label: 'Add Row', group: 'table' },
+  { type: 'tableAddColumn', icon: '+C', label: 'Add Col', group: 'table' },
   { type: 'undo', icon: '↶', label: 'Undo', group: 'action' },
   { type: 'redo', icon: '↷', label: 'Redo', group: 'action' },
 ];

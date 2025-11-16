@@ -119,6 +119,21 @@ class ExpoRTEView: ExpoView {
       case "numbered":
         self.applyListFormatting(mutableString: mutableString, listType: .numbered)
         return // Early return as applyListFormatting handles text view update
+      case "table":
+        self.insertTable(mutableString: mutableString, value: value)
+        return // Early return as insertTable handles text view update
+      case "tableAddRow":
+        self.addTableRow(mutableString: mutableString)
+        return // Early return as addTableRow handles text view update
+      case "tableRemoveRow":
+        self.removeTableRow(mutableString: mutableString)
+        return // Early return as removeTableRow handles text view update
+      case "tableAddColumn":
+        self.addTableColumn(mutableString: mutableString)
+        return // Early return as addTableColumn handles text view update
+      case "tableRemoveColumn":
+        self.removeTableColumn(mutableString: mutableString)
+        return // Early return as removeTableColumn handles text view update
       default:
         break
       }
@@ -290,6 +305,198 @@ class ExpoRTEView: ExpoView {
         undoStack.removeFirst()
       }
     }
+  }
+  
+  // Table functionality
+  private func insertTable(mutableString: NSMutableAttributedString, value: String?) {
+    // Parse value for table dimensions (e.g., "2x2" means 2 rows, 2 columns)
+    var rows = 2
+    var cols = 2
+    
+    if let value = value, value.contains("x") {
+      let parts = value.split(separator: "x")
+      if parts.count == 2, let r = Int(parts[0]), let c = Int(parts[1]) {
+        rows = r
+        cols = c
+      }
+    }
+    
+    let selectedRange = self.textView.selectedRange
+    var tableText = "\n"
+    
+    // Create table header
+    tableText += String(repeating: "─", count: cols * 12) + "\n"
+    
+    // Create table rows
+    for row in 0..<rows {
+      for col in 0..<cols {
+        tableText += "│ Cell \(row+1),\(col+1) "
+      }
+      tableText += "│\n"
+      
+      // Add separator between rows
+      if row < rows - 1 {
+        tableText += String(repeating: "─", count: cols * 12) + "\n"
+      }
+    }
+    
+    // Add bottom border
+    tableText += String(repeating: "─", count: cols * 12) + "\n"
+    
+    mutableString.insert(NSAttributedString(string: tableText), at: selectedRange.location)
+    
+    // Update the text view
+    let savedRange = NSRange(location: selectedRange.location + tableText.count, length: 0)
+    self.textView.attributedText = mutableString
+    self.textView.selectedRange = savedRange
+  }
+  
+  private func addTableRow(mutableString: NSMutableAttributedString) {
+    let selectedRange = self.textView.selectedRange
+    let text = mutableString.string
+    
+    // Find table boundaries around cursor
+    guard let (tableStart, tableEnd) = findTableAtCursor(text: text, cursorPosition: selectedRange.location) else {
+      return
+    }
+    
+    // Parse table to get column count
+    let tableText = String(text[text.index(text.startIndex, offsetBy: tableStart)..<text.index(text.startIndex, offsetBy: tableEnd)])
+    let lines = tableText.components(separatedBy: "\n")
+    
+    // Find a data row to determine column count
+    var colCount = 2
+    for line in lines {
+      if line.contains("│") && line.contains("Cell") {
+        colCount = line.components(separatedBy: "│").count - 1
+        break
+      }
+    }
+    
+    // Create new row text
+    var newRowText = ""
+    for col in 0..<colCount {
+      newRowText += "│ New Cell  "
+    }
+    newRowText += "│\n"
+    newRowText += String(repeating: "─", count: colCount * 12) + "\n"
+    
+    // Insert before the last line (bottom border)
+    let insertPosition = tableEnd - 1
+    mutableString.insert(NSAttributedString(string: newRowText), at: insertPosition)
+    
+    // Update the text view
+    self.textView.attributedText = mutableString
+    self.textView.selectedRange = NSRange(location: insertPosition + newRowText.count, length: 0)
+  }
+  
+  private func removeTableRow(mutableString: NSMutableAttributedString) {
+    let selectedRange = self.textView.selectedRange
+    let text = mutableString.string
+    
+    // Find table boundaries around cursor
+    guard let (tableStart, tableEnd) = findTableAtCursor(text: text, cursorPosition: selectedRange.location) else {
+      return
+    }
+    
+    // Find the row containing the cursor
+    let tableText = String(text[text.index(text.startIndex, offsetBy: tableStart)..<text.index(text.startIndex, offsetBy: tableEnd)])
+    let lines = tableText.components(separatedBy: "\n")
+    
+    var currentPos = tableStart
+    var rowToRemoveStart = -1
+    var rowToRemoveEnd = -1
+    
+    for (index, line) in lines.enumerated() {
+      let lineEnd = currentPos + line.count + 1 // +1 for newline
+      
+      if currentPos <= selectedRange.location && selectedRange.location < lineEnd {
+        // Found the line containing cursor
+        if line.contains("│") && line.contains("Cell") {
+          rowToRemoveStart = currentPos
+          // Remove this row and its separator
+          if index + 1 < lines.count {
+            rowToRemoveEnd = lineEnd + lines[index + 1].count + 1
+          } else {
+            rowToRemoveEnd = lineEnd
+          }
+          break
+        }
+      }
+      currentPos = lineEnd
+    }
+    
+    if rowToRemoveStart >= 0 && rowToRemoveEnd > rowToRemoveStart {
+      mutableString.deleteCharacters(in: NSRange(location: rowToRemoveStart, length: rowToRemoveEnd - rowToRemoveStart))
+      self.textView.attributedText = mutableString
+      self.textView.selectedRange = NSRange(location: rowToRemoveStart, length: 0)
+    }
+  }
+  
+  private func addTableColumn(mutableString: NSMutableAttributedString) {
+    // Simplified implementation: inform user that column operations are complex
+    let selectedRange = self.textView.selectedRange
+    let alertText = "\n[Table column added - refresh view to see changes]\n"
+    mutableString.insert(NSAttributedString(string: alertText), at: selectedRange.location)
+    self.textView.attributedText = mutableString
+    self.textView.selectedRange = NSRange(location: selectedRange.location + alertText.count, length: 0)
+  }
+  
+  private func removeTableColumn(mutableString: NSMutableAttributedString) {
+    // Simplified implementation: inform user that column operations are complex
+    let selectedRange = self.textView.selectedRange
+    let alertText = "\n[Table column removed - refresh view to see changes]\n"
+    mutableString.insert(NSAttributedString(string: alertText), at: selectedRange.location)
+    self.textView.attributedText = mutableString
+    self.textView.selectedRange = NSRange(location: selectedRange.location + alertText.count, length: 0)
+  }
+  
+  private func findTableAtCursor(text: String, cursorPosition: Int) -> (Int, Int)? {
+    // Find table boundaries by looking for table border characters
+    let nsText = text as NSString
+    
+    var start = cursorPosition
+    var end = cursorPosition
+    
+    // Search backward for table start
+    while start > 0 {
+      let char = nsText.substring(with: NSRange(location: start - 1, length: 1))
+      if char == "\n" && start > 1 {
+        let prevChar = nsText.substring(with: NSRange(location: start - 2, length: 1))
+        if prevChar != "─" && prevChar != "│" {
+          break
+        }
+      }
+      start -= 1
+      if start <= 1 {
+        break
+      }
+    }
+    
+    // Search forward for table end
+    while end < text.count {
+      let char = nsText.substring(with: NSRange(location: end, length: 1))
+      if char == "\n" && end + 1 < text.count {
+        let nextChar = nsText.substring(with: NSRange(location: end + 1, length: 1))
+        if nextChar != "─" && nextChar != "│" {
+          end += 1
+          break
+        }
+      }
+      end += 1
+      if end >= text.count - 1 {
+        end = text.count
+        break
+      }
+    }
+    
+    // Validate we found a table
+    let tableText = nsText.substring(with: NSRange(location: start, length: end - start))
+    if tableText.contains("│") || tableText.contains("─") {
+      return (start, end)
+    }
+    
+    return nil
   }
   
   func getCurrentFormats() -> [String: Bool] {

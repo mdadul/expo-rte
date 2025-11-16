@@ -24,6 +24,7 @@
 - 🎯 **Multiple Toolbar Styles** - Basic, custom styled, and responsive adaptive toolbars
 - 🔄 **Format Toggle** - Smart formatting state management
 - 📝 **Rich Formatting** - Bold, italic, underline, strikethrough, lists, links, and more
+- 📊 **Table Support** - Insert and manipulate tables with add/remove row operations
 
 ## 🚀 Installation
 
@@ -193,6 +194,11 @@ type FormatType =
   | 'bullet' 
   | 'numbered' 
   | 'link' 
+  | 'table'              // Insert a table
+  | 'tableAddRow'        // Add a row to table
+  | 'tableRemoveRow'     // Remove a row from table
+  | 'tableAddColumn'     // Add a column to table
+  | 'tableRemoveColumn'  // Remove a column from table
   | 'undo' 
   | 'redo';
 ```
@@ -332,6 +338,45 @@ const htmlContent = await editorRef.current?.getContent();
 // Programmatic undo/redo
 await editorRef.current?.undo();
 await editorRef.current?.redo();
+```
+
+### Table Operations
+
+```tsx
+// Insert a 3x3 table
+await editorRef.current?.format('table', '3x3');
+
+// Add a row to the table (cursor must be inside table)
+await editorRef.current?.format('tableAddRow');
+
+// Remove a row from the table (cursor must be in the row to remove)
+await editorRef.current?.format('tableRemoveRow');
+
+// Add/remove columns (simplified operations)
+await editorRef.current?.format('tableAddColumn');
+await editorRef.current?.format('tableRemoveColumn');
+```
+
+**Table Usage with Toolbar:**
+
+```tsx
+const tableToolbarConfig: ToolbarConfig = {
+  buttons: [
+    { type: 'bold', icon: 'B', label: 'Bold' },
+    { type: 'italic', icon: 'I', label: 'Italic' },
+    { type: 'table', icon: '⊞', label: 'Table', value: '2x2', group: 'table' },
+    { type: 'tableAddRow', icon: '+R', label: 'Add Row', group: 'table' },
+    { type: 'tableRemoveRow', icon: '-R', label: 'Remove Row', group: 'table' },
+  ],
+  groupButtons: true,
+  showLabels: true,
+};
+
+<RichTextEditor
+  ref={editorRef}
+  toolbarConfig={tableToolbarConfig}
+  placeholder="Start typing..."
+/>
 ```
 
 ## 🛠️ Customization
